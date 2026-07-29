@@ -1,0 +1,4346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Shwari | Finance">
+    
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e1e1e">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#1e1e1e">
+    <title>Shwari | Finance · Digital Assimilation</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    
+    <style>
+        /* =========================================
+           0. FULLSCREEN & KEYBOARD STABLE BASE
+           ========================================= */
+        :root {
+            --vh: 1vh;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --bg-dark: #1e1e1e; /* Matches image & status bar for seamless look */
+            --bg-card: #1f2937;
+            --accent: #55d082;
+            --anim-smooth: cubic-bezier(0.2, 0.8, 0.2, 1.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+
+        html, body {
+            height: 100%; width: 100%;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            min-height: calc(var(--vh, 1vh) * 100);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow: hidden; position: relative; perspective: 1200px;
+            -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%;
+            background-color: var(--bg-dark);
+            padding: 0; margin: 0;
+            touch-action: manipulation;
+            overscroll-behavior-y: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .bg-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 90000;
+    background: var(--bg-dark); /* Matched to seamlessly blend the image */
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.5s ease-out, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1.05);
+}
+
+.bg-layer.fade-out {
+    opacity: 0;
+    transform: scale(1.35);
+    pointer-events: none;
+}
+
+/* --- ANIMATIONS: RECOIL & VANISH --- */
+.bg-layer.pull-center .orbit-wrapper {
+    /* Extreme Recoil: Pulls back, gets larger, then violently spins into the center */
+    animation: pullCenterAnim 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.bg-layer.pull-center .splash-center-img {
+    /* Smoothly sucks the image into the background, aggressively blurring the edges as it vanishes */
+    animation: smoothSuckInside 0.7s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+}
+
+@keyframes pullCenterAnim {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    35% { transform: scale(1.18) rotate(-20deg); opacity: 1; filter: brightness(1.3); }
+    100% { transform: scale(0) rotate(600deg); opacity: 0; filter: blur(5px); }
+}
+
+@keyframes smoothSuckInside {
+    0% { 
+        transform: scale(1); 
+        opacity: 1; 
+        filter: none;
+        clip-path: circle(50% at 50% 50%); /* Sets initial clean circular boundary */
+    }
+    /* THE CIRCULAR BOOM CHARGE: Expands into a high-energy shockwave retaining 100% original clarity and colors */
+    25% { 
+        transform: scale(1.25); 
+        opacity: 1; 
+        filter: none; /* No blinding flash, keeping the image perfectly clear */
+        clip-path: circle(50% at 50% 50%); /* Cuts square edges sharply on expansion */
+    } 
+    /* THE IMPLOSION SNAP: Snaps directly down to an absolute central point and cleanly vanishes */
+    100% { 
+        transform: scale(0); 
+        opacity: 0; 
+        filter: none;
+        clip-path: circle(0% at 50% 50%); /* Collapses into a perfect microscopic singularity */
+    } 
+}
+
+.splash-center-img {
+    width: 90%;
+    aspect-ratio: 4/3;
+    object-fit: contain;
+    z-index: 1;
+    /* Drops in and bounces twice with declining speed */
+    animation: dropAndBounce 1.4s forwards;
+    transition: opacity 0.4s ease-out; 
+}
+
+/* Ensures the image vanishes smoothly when the splash screen leaves */
+.bg-layer.fade-out .splash-center-img {
+    opacity: 0;
+}
+
+@keyframes dropAndBounce {
+    /* Falling down (accelerating) */
+    0% { transform: translateY(-100vh); opacity: 0; animation-timing-function: ease-in; }
+    15% { opacity: 1; }
+    /* First impact, bouncing back up (decelerating) */
+    40% { transform: translateY(0); animation-timing-function: ease-out; }
+    /* First peak, falling back down */
+    65% { transform: translateY(-16vh); animation-timing-function: ease-in; }
+    /* Second impact, smaller bounce up */
+    82% { transform: translateY(0); animation-timing-function: ease-out; }
+    /* Second peak, final fall */
+    92% { transform: translateY(-5vh); animation-timing-function: ease-in; }
+    /* Settled perfectly in the center */
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+.orbit-wrapper {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: min(65vw, 260px);
+    height: min(65vw, 260px);
+    z-index: 999;
+    pointer-events: none;
+    animation: boomInBounce 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.orbit-track {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    animation: spinTrack 14s linear infinite;
+}
+
+/* --- SUPER COOL BOUNCING / VIBRATING ICONS --- */
+.orbit-icon {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 36px;
+    color: #FF7500; /* Exact match to the truck logo */
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 4px rgba(255, 117, 0, 0.6));
+    /* Double animation: Keeps them facing upright while vibrating intensely */
+    animation: 
+        counterSpinTrack 14s linear infinite,
+        iconVibrateBounce 0.4s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+}
+
+/* Staggered delays so the icons vibrate randomly instead of all at once */
+.oi-1 { top: 0%; left: 50%; margin-left: -20px; margin-top: -20px; animation-delay: 0s, 0.0s; }
+.oi-2 { top: 25%; left: 93.3%; margin-left: -20px; margin-top: -20px; animation-delay: 0s, 0.1s; }
+.oi-3 { top: 75%; left: 93.3%; margin-left: -20px; margin-top: -20px; animation-delay: 0s, 0.2s; }
+.oi-4 { top: 100%; left: 50%; margin-left: -20px; margin-top: -20px; animation-delay: 0s, 0.3s; }
+.oi-5 { top: 75%; left: 6.7%; margin-left: -20px; margin-top: -20px; animation-delay: 0s, 0.4s; }
+.oi-6 { top: 25%; left: 6.7%; margin-left: -20px; margin-top: -20px; animation-delay: 0s, 0.5s; }
+
+@keyframes iconVibrateBounce {
+    0% { 
+        font-size: 32px; 
+        color: #FF7500; /* Exact match to the truck logo */
+        padding-bottom: 0px; 
+        filter: drop-shadow(0 0 2px rgba(255, 117, 0, 0.4)); 
+    }
+    100% { 
+        font-size: 40px; 
+        color: #FF7500; /* Exact match to the truck logo */
+        padding-bottom: 12px; /* Bounces the icon outward inside its box */
+        filter: drop-shadow(0 0 15px rgba(255, 117, 0, 1)); 
+    }
+}
+
+/* --- SPARKS OMNIDIRECTIONAL BLAST ENGINE --- */
+.spark {
+    position: absolute;
+    background: #FF7500; /* Exact match to the truck logo */
+    border-radius: 50%;
+    box-shadow: 0 0 10px #FF7500, 0 0 25px #FF7500, 0 0 45px #FF7500;
+    opacity: 0;
+    z-index: 1000;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+}
+
+/* Fire sparks aggressively when the pull center animation triggers */
+.bg-layer.pull-center .spark-1 { width: 14px; height: 14px; animation: shootLeft1 0.7s ease-out forwards; }
+.bg-layer.pull-center .spark-2 { width: 8px; height: 8px; animation: shootLeft2 0.8s ease-out forwards 0.1s; }
+.bg-layer.pull-center .spark-3 { width: 16px; height: 16px; animation: shootLeft3 0.6s ease-out forwards 0.05s; }
+.bg-layer.pull-center .spark-4 { width: 10px; height: 10px; animation: shootLeft4 0.7s ease-out forwards 0.15s; }
+
+@keyframes boomInBounce {
+    0% { transform: scale(0.1); opacity: 0; }
+    50% { transform: scale(1.1); opacity: 1; }
+    70% { transform: scale(0.95); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shootLeft1 {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(-280px, -140px) scale(0); opacity: 0; filter: blur(3px); }
+}
+@keyframes shootLeft2 {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(-200px, 120px) scale(0); opacity: 0; filter: blur(2px); }
+}
+@keyframes shootLeft3 {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(-320px, 40px) scale(0); opacity: 0; filter: blur(4px); }
+}
+@keyframes shootLeft4 {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(-160px, -180px) scale(0); opacity: 0; filter: blur(2px); }
+}
+@keyframes shoot5  { 0%{transform:translate(0,0) scale(1);opacity:1;} 100%{transform:translate(300px,-100px) scale(0);opacity:0;filter:blur(3px);} }
+@keyframes shoot6  { 0%{transform:translate(0,0) scale(1);opacity:1;} 100%{transform:translate(240px,200px) scale(0);opacity:0;filter:blur(2px);} }
+@keyframes shoot7  { 0%{transform:translate(0,0) scale(1);opacity:1;} 100%{transform:translate(0px,-280px) scale(0);opacity:0;filter:blur(4px);} }
+@keyframes shoot8  { 0%{transform:translate(0,0) scale(1);opacity:1;} 100%{transform:translate(0px,280px) scale(0);opacity:0;filter:blur(3px);} }
+@keyframes shoot9  { 0%{transform:translate(0,0) scale(1);opacity:1;} 100%{transform:translate(-240px,200px) scale(0);opacity:0;filter:blur(2px);} }
+@keyframes shoot10 { 0%{transform:translate(0,0) scale(1);opacity:1;} 100%{transform:translate(180px,-220px) scale(0);opacity:0;filter:blur(3px);} }
+@keyframes shoot11 { 0%{transform:translate(0,0) scale(1);opacity:1;} 100%{transform:translate(-120px,260px) scale(0);opacity:0;filter:blur(2px);} }
+@keyframes shoot12 { 0%{transform:translate(0,0) scale(1);opacity:1;} 100%{transform:translate(350px,60px) scale(0);opacity:0;filter:blur(4px);} }
+
+.bg-layer.pull-center .spark-5  { width:18px;height:18px;background:#FFD700;box-shadow:0 0 12px #FFD700,0 0 30px #FFD700;animation:shoot5  0.65s ease-out forwards 0.05s; }
+.bg-layer.pull-center .spark-6  { width:10px;height:10px;background:#FF4500;box-shadow:0 0 10px #FF4500,0 0 25px #FF4500;animation:shoot6  0.75s ease-out forwards 0.1s;  }
+.bg-layer.pull-center .spark-7  { width:14px;height:14px;background:#FF7500;box-shadow:0 0 10px #FF7500,0 0 25px #FF7500;animation:shoot7  0.6s  ease-out forwards 0.0s;  }
+.bg-layer.pull-center .spark-8  { width:12px;height:12px;background:#FFD700;box-shadow:0 0 12px #FFD700,0 0 30px #FFD700;animation:shoot8  0.7s  ease-out forwards 0.12s; }
+.bg-layer.pull-center .spark-9  { width:8px; height:8px; background:#FF7500;box-shadow:0 0 10px #FF7500,0 0 20px #FF7500;animation:shoot9  0.8s  ease-out forwards 0.08s; }
+.bg-layer.pull-center .spark-10 { width:16px;height:16px;background:#FF4500;box-shadow:0 0 14px #FF4500,0 0 35px #FF4500;animation:shoot10 0.65s ease-out forwards 0.15s; }
+.bg-layer.pull-center .spark-11 { width:9px; height:9px; background:#FFD700;box-shadow:0 0 10px #FFD700,0 0 22px #FFD700;animation:shoot11 0.72s ease-out forwards 0.03s; }
+.bg-layer.pull-center .spark-12 { width:13px;height:13px;background:#FF7500;box-shadow:0 0 12px #FF7500,0 0 28px #FF7500;animation:shoot12 0.68s ease-out forwards 0.18s; }
+
+@keyframes spinTrack { 100% { transform: rotate(360deg); } }
+@keyframes counterSpinTrack { 100% { transform: rotate(-360deg); } }
+
+        body.keyboard-open .bg-layer,
+        body:not(.keyboard-open) .bg-layer {
+            transform: none !important;
+        }
+
+        /* =========================================
+           1. PARALLAX WRAPPER & ANIMATIONS
+           ========================================= */
+        .wrapper {
+            position: absolute; width: min(500px, 92vw); height: min(500px, 92vw);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; transform: scale(0.8);
+            transition: opacity 1.2s ease-out, transform 1.2s var(--anim-smooth);
+            transform-style: preserve-3d; will-change: transform, opacity;
+            z-index: 10;
+        }
+        .wrapper.pop-in { opacity: 1; transform: scale(1); }
+
+        .shockwave { position: absolute; top: 50%; left: 50%; width: 100px; height: 100px; border-radius: 50%; border: 2px solid #ffffff; transform: translate(-50%, -50%) scale(0.5); opacity: 0; z-index: 10; pointer-events: none; }
+        .particle { position: absolute; border-radius: 50%; opacity: 0; animation: float 5s infinite ease-in-out; z-index: 20; transition: all 0.6s var(--anim-smooth); will-change: transform, top, left, opacity; }
+        .wrapper.pop-in .particle { opacity: 0.6; }
+        .p1 { width: 12px; height: 12px; top: 10%; left: 20%; background: #55d082; animation-duration: 4.2s; box-shadow: 0 0 10px #55d082;}
+        .p2 { width: 8px;  height: 8px;  top: 60%; left: 80%; background: #ffffff; animation-duration: 6.0s; box-shadow: 0 0 10px #ffffff;}
+        .p3 { width: 16px; height: 16px; top: 75%; left: 15%; background: #b78a1a; animation-duration: 5.4s; box-shadow: 0 0 10px #b78a1a;}
+        .p4 { width: 9px;  height: 9px;  top: 25%; left: 85%; background: #dddddd; animation-duration: 7.0s; box-shadow: 0 0 10px #dddddd;}
+        @keyframes float { 0%, 100% { transform: translateY(0) scale(1.0); } 50% { transform: translateY(-15px) scale(1.1); } }
+
+        .wrapper.pull-active {
+            opacity: 0 !important;
+            transition: opacity 1.2s ease-in-out !important;
+            pointer-events: none;
+        }
+
+        /* =========================================
+           2. AUTO-CONTINUE SCREEN OVERLAY
+           ========================================= */
+        #continue-overlay {
+            position: fixed; inset: 0; z-index: 50; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
+            transition: opacity 1s var(--anim-smooth);
+        }
+        #continue-overlay.hidden { display: none; opacity: 0; }
+
+        .continue-header { padding: 60px 20px; text-align: center; text-shadow: 0 4px 15px rgba(0,0,0,0.8); padding-top: max(60px, var(--safe-top)); display: none !important; }
+        .dept-title { font-size: 28px; font-weight: 900; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; line-height: 1.3; font-family: 'Inter', sans-serif;}
+        .dept-subtitle { font-size: 14px; color: #55d082; letter-spacing: 5px; text-transform: uppercase; margin-top: 10px; font-weight: 700; font-family: 'Inter', sans-serif;}
+
+        .continue-footer {
+            padding: 40px 20px 40px; text-align: center;
+            background: linear-gradient(to top, rgba(17,24,39,0.95) 0%, rgba(17,24,39,0.8) 40%, rgba(17,24,39,0) 100%);
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: max(40px, var(--safe-bottom));
+        }
+
+        .elephant-gate {
+            position: absolute;
+            bottom: max(40px, calc(40px + var(--safe-bottom)));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.8s var(--anim-smooth), 
+                        transform 0.8s var(--anim-smooth);
+            z-index: 10;
+        }
+
+        .elephant-gate.unlocked {
+            opacity: 0;
+            transform: scale(1.8) translateY(-30px);
+            pointer-events: none;
+        }
+
+        .elephant-icon {
+            font-size: 68px;
+            background: linear-gradient(135deg, #C9A961 0%, #F4E5C2 30%, #D4AF37 60%, #8B7355 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4)) 
+                    drop-shadow(0 0 30px rgba(201, 169, 97, 0.5));
+            animation: elephantLive 3s ease-in-out infinite, 
+                       elephantShimmer 4s ease-in-out infinite;
+            transform-origin: center bottom;
+        }
+
+        @keyframes elephantLive {
+            0%, 100% { transform: translateY(0) rotate(-1deg) scale(1); }
+            15% { transform: translateY(-8px) rotate(2deg) scale(1.05); }
+            30% { transform: translateY(0) rotate(-2deg) scale(1); }
+            45% { transform: translateY(-5px) rotate(1deg) scale(1.02); }
+            60% { transform: translateY(0) rotate(-1deg) scale(1); }
+            75% { transform: translateY(-3px) rotate(0.5deg) scale(1.01); }
+            90% { transform: translateY(0) rotate(-0.5deg) scale(1); }
+        }
+
+        @keyframes elephantShimmer {
+            0%, 100% { background-position: 0% 50%; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4)) drop-shadow(0 0 20px rgba(201, 169, 97, 0.4)); }
+            50% { background-position: 100% 50%; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4)) drop-shadow(0 0 40px rgba(201, 169, 97, 0.8)); }
+        }
+
+        .unlock-ring {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border: 2px solid rgba(201, 169, 97, 0.6);
+            border-radius: 50%;
+            opacity: 0;
+            animation: unlockPulse 3s ease-out infinite;
+        }
+
+        @keyframes unlockPulse {
+            0% { transform: scale(0.8); opacity: 0.6; border-width: 3px; }
+            100% { transform: scale(1.5); opacity: 0; border-width: 0px; }
+        }
+
+        .employee-info {
+            opacity: 0;
+            transform: translateY(30px) scale(0.9);
+            transition: opacity 0.8s var(--anim-smooth) 0.2s, 
+                        transform 0.8s var(--anim-smooth) 0.2s;
+            z-index: 5;
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            gap: 15px;
+            position: relative;
+        }
+
+        .employee-info.unlocked {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .water-wave {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1px; height: 1px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .employee-info.unlocked .water-wave::before,
+        .employee-info.unlocked .water-wave::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid rgba(85, 208, 130, 0.5);
+            opacity: 0;
+        }
+
+        .employee-info.unlocked .water-wave::before {
+            animation: dripWave 3.5s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+        }
+
+        .employee-info.unlocked .water-wave::after {
+            animation: dripWave 3.5s cubic-bezier(0.1, 0.8, 0.3, 1) infinite 1.75s;
+        }
+
+        @keyframes dripWave {
+            0% { width: 40px; height: 40px; opacity: 1; border-width: 4px; }
+            100% { width: 300px; height: 300px; opacity: 0; border-width: 0px; }
+        }
+
+        .elephant-icon-small {
+            font-size: 28px; color: #55d082;
+            filter: drop-shadow(0 0 10px rgba(85, 208, 130, 0.5));
+            animation: elephantWalk 3s ease-in-out infinite;
+        }
+        @keyframes elephantWalk {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-3px) rotate(-3deg); }
+            75% { transform: translateY(-3px) rotate(3deg); }
+        }
+
+        .text-group { text-align: center; display: none !important; }
+        
+        .employee-info.unlocked .text-group {
+            animation: slowMotionPop 2.5s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slowMotionPop {
+            0% { opacity: 0; transform: scale(0.6) translateY(20px); }
+            40% { opacity: 1; transform: scale(1.05) translateY(-2px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .medium-font { font-size: 22px !important; color: #ffffff; font-weight: 900; letter-spacing: -0.5px; margin: 0 0 5px 0; line-height: 1.1; font-family: 'Inter', sans-serif;}
+        .small-email { font-size: 13px; color: #bbbbbb; font-weight: 500; font-family: 'Inter', sans-serif; letter-spacing: 0.5px; margin: 0;}
+        
+        /* =========================================
+           3. REGISTRATION PORTAL
+           ========================================= */
+        #auth-portal {
+            position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; padding: 20px;
+            background: #000000;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            transition: opacity 0.6s var(--anim-smooth);
+            will-change: padding;
+        }
+        #auth-portal.hidden { display: none; opacity: 0; pointer-events: none; }
+        #reg-screen { display: none !important; }
+        #auth-portal.keyboard-adjust {
+            align-items: flex-start;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        body.keyboard-open #auth-portal {
+            background: #000000 !important;
+        }
+
+        .auth-card {
+            width: 100%; max-width: 360px; padding: 32px 24px; border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(240,250,245,0.95));
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3), inset 0 0 0 1.5px rgba(255,255,255,0.8); text-align: center;
+            animation: cardFloatUp 0.8s var(--anim-smooth); font-family: 'Inter', sans-serif;
+            transition: transform 0.7s var(--anim-smooth), opacity 0.5s var(--anim-smooth);
+            max-height: calc(var(--vh, 1vh) * 90);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: auto;
+            will-change: transform;
+        }
+        @keyframes cardFloatUp { from { transform: translateY(60px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+        .auth-card.hidden { display: none; }
+
+        body.keyboard-open .auth-card {
+            transform: none;
+        }
+
+        .auth-icon i { font-size: 38px; margin-bottom: 16px; background: #eef7f1; padding: 20px; border-radius: 50%;display: inline-block; background: linear-gradient(270deg, #2c7a47, #00796b, #1f6e3f); background-size: 400% 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: colorShift 5s ease infinite; }
+        @keyframes colorShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .auth-card h2 { font-size: 20px; color: #111; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px;}
+        .desc-text { font-size: 13px; color: #666; margin-bottom: 20px; }
+
+        .input-group { position: relative; margin-bottom: 15px; }
+        .input-group input { pointer-events: auto; width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 15px; font-family: 'Inter', sans-serif; color: #333; background: #f8fafc; transition: all 0.3s ease; -webkit-appearance: none; }
+        .input-group input:focus { border-color: #2c7a47; outline: none; background: #fff; box-shadow: 0 4px 15px rgba(44, 122, 71, 0.1); }
+        .input-group input.error { border-color: #e74c3c; background: #fff5f5; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.1); }
+        .input-group input.success { border-color: #55d082; background: #f0fff5; }
+        
+        .error-message {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #e74c3c;
+            margin-top: 6px;
+            margin-left: 4px;
+            text-align: left;
+            animation: shakeError 0.4s ease;
+        }
+        .error-message.show { display: flex; }
+        .error-message i { font-size: 11px; }
+        
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-4px); }
+            40%, 80% { transform: translateX(4px); }
+        }
+
+        .auth-btn { 
+            width: 100%; 
+            pointer-events: auto; 
+            padding: 16px; 
+            background: linear-gradient(270deg, #2c7a47, #005c4b, #1f6e3f); 
+            background-size: 400% 400%; 
+            color: white; 
+            border: none; 
+            border-radius: 16px; 
+            font-size: 16px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            transition: transform 0.2s var(--anim-smooth), box-shadow 0.3s ease; 
+            box-shadow: 0 10px 25px rgba(44, 122, 71, 0.3); 
+            animation: colorShift 6s ease infinite; 
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .auth-btn:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(44, 122, 71, 0.4); }
+        .auth-btn:active { transform: scale(0.96) translateY(0); box-shadow: 0 5px 10px rgba(44, 122, 71, 0.2); }
+        .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* =========================================
+           4. APP IFRAME - SMOOTH CROSSFADE REVEAL
+           ========================================= */
+        .app { 
+            position: fixed; inset: 0; opacity: 0; pointer-events: none; 
+            background: var(--bg-dark); z-index: 2000; 
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
+            width: 100vw; 
+            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100);
+            visibility: hidden;
+        }
+        .app.active { visibility: visible; }
+        .app.active { opacity: 1; pointer-events: auto; }
+        
+        iframe { 
+            width: 111.11%; height: 111.11%; border: none; 
+            background: var(--bg-dark); opacity: 0;
+            transform: scale(0.8) translateY(15px);
+            transform-origin: top left;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s, 
+                        transform 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            padding: 0 !important;
+            margin: 0 !important;
+            content-visibility: auto;
+        }
+        /* The final active state scales it exactly to 0.9 (90%) */
+        .app.active iframe { opacity: 1; transform: scale(0.9) translateY(0); }
+
+        /* RESTRICTION SCREENS */
+        #device-error { display: none; position: fixed; inset: 0; background: rgba(17, 24, 39, 0.98); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 30px; font-family: 'Inter', sans-serif; }
+        .error-card { background: var(--bg-card); max-width: 400px; padding: 40px 30px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(85, 208, 130, 0.2); }
+        .error-card h2 { font-size: 24px; color: #55d082; font-weight: 800; margin-bottom: 15px; }
+        .error-card p { font-size: 16px; color: #aaaaaa; line-height: 1.6; }
+        @media screen and (orientation: landscape), screen and (min-width: 600px) { body > *:not(#device-error) { display: none !important; } #device-error { display: flex !important; } }
+
+        /* =========================================
+           INSTAGRAM-STYLE LAUNCH LOADER
+           ========================================= */
+        #ig-loader {
+            position: fixed; inset: 0; z-index: 95000;
+            background: #1e1e1e;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.45s ease;
+        }
+        #ig-loader.hidden { opacity: 0; pointer-events: none; }
+        #ig-loader.gone   { display: none; }
+        .ig-icon-wrap {
+            width: 96px; height: 96px;
+            background: linear-gradient(145deg, #1f6e3f, #55d082);
+            border-radius: 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 52px; color: #fff;
+            box-shadow: 0 0 0 0 rgba(85,208,130,0.5);
+            animation: igBeat 1.6s ease-in-out infinite;
+            margin-bottom: 0;
+        }
+        @keyframes igBeat {
+            0%,100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(85,208,130,0.45); }
+            50%      { transform: scale(1.07); box-shadow: 0 0 0 18px rgba(85,208,130,0);   }
+        }
+        .ig-from {
+            position: fixed;
+            bottom: max(28px, env(safe-area-inset-bottom));
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            font-family: 'Inter', sans-serif;
+        }
+        .ig-from span {
+            color: rgba(85, 208, 130, 0.7);
+        }
+        .ig-from span { color: rgba(85,208,130,0.55); font-weight: 600; }
+
+        #forcedInstall { display: none; position: fixed; inset: 0; background: rgba(17, 24, 39, 0.95); z-index: 9999; justify-content: center; align-items: center; padding: 20px; }
+        .install-card { background: var(--bg-card); width: 100%; max-width: 360px; padding: 40px 30px; border-radius: 30px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.4); border: 1px solid rgba(85, 208, 130, 0.2); font-family: 'Inter', sans-serif; }
+        .install-card h2 { color: #55d082; margin-bottom: 12px; font-size: 24px; font-weight: 800;}
+        .install-card p { color: #aaaaaa; font-size: 15px; margin-bottom: 30px;}
+        
+        @keyframes installPulse {
+            0% { box-shadow: 0 0 0 0 rgba(85, 208, 130, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(85, 208, 130, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(85, 208, 130, 0); }
+        }
+        
+        .install-btn { 
+            background: transparent; 
+            color: #55d082; 
+            border: 2px solid #55d082; 
+            padding: 18px 0; 
+            width: 100%; 
+            border-radius: 15px; 
+            font-size: 18px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 10px; 
+            margin-top: 20px; 
+            font-family: 'Inter', sans-serif; 
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            animation: installPulse 2s infinite;
+        }
+        .install-btn:hover { background: #55d082; color: #111827; }
+        .install-btn:active { transform: scale(0.96); }
+
+        /* =========================================
+           5. LIGHT / DARK THEME ADAPTATION
+           ========================================= */
+        @media (prefers-color-scheme: light) {
+            html, body, .app, iframe { background-color: var(--bg-dark) !important; }
+            .dept-title, .medium-font { color: #ffffff !important; }
+            .dept-subtitle { color: #55d082 !important; }
+            .small-email { color: #bbbbbb !important; }
+            
+            .continue-footer {
+                background: linear-gradient(to top, rgba(17,24,39,0.95) 0%, rgba(17,24,39,0.8) 40%, rgba(17,24,39,0) 100%) !important;
+            }
+
+            #auth-portal { background: #000000 !important; }
+            #device-error, #forcedInstall, #install-progress-screen { background: var(--bg-dark) !important; }
+            .error-card, .install-card { 
+                background: var(--bg-card) !important; 
+                border-color: rgba(85, 208, 130, 0.2) !important;
+            }
+            .error-card p, .install-card p { color: #aaaaaa !important; }
+        }
+
+        /* =========================================
+           6. INSTALL PROGRESS / ANIMATION SCREEN
+           ========================================= */
+        #install-progress-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 40px 30px;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at 40% 60%, rgba(44, 122, 71, 0.18) 0%, transparent 70%),
+                        radial-gradient(ellipse at 70% 30%, rgba(85, 208, 130, 0.10) 0%, transparent 60%),
+                        var(--bg-dark);
+            transition: opacity 0.8s ease;
+        }
+
+        #install-progress-screen.active { display: flex; }
+        #install-progress-screen.fade-out { opacity: 0; pointer-events: none; }
+
+        @media (prefers-color-scheme: light) {
+            #install-progress-screen {
+                background: radial-gradient(ellipse at 40% 60%, rgba(44, 122, 71, 0.12) 0%, transparent 70%),
+                            radial-gradient(ellipse at 70% 30%, rgba(85, 208, 130, 0.08) 0%, transparent 60%),
+                            #e8f5ed;
+            }
+        }
+
+        .install-app-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 22px;
+            background: linear-gradient(145deg, #1f6e3f 0%, #55d082 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: #ffffff;
+            box-shadow: 0 12px 40px rgba(85, 208, 130, 0.45),
+                        inset 0 1px 0 rgba(255,255,255,0.3);
+            margin-bottom: 32px;
+            animation: iconBounceIn 0.8s var(--anim-smooth) forwards;
+            opacity: 0;
+        }
+
+        @keyframes iconBounceIn {
+            0%   { opacity: 0; transform: scale(0.4) rotate(-10deg); }
+            60%  { opacity: 1; transform: scale(1.1) rotate(2deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        .install-title {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            margin-bottom: 4px;
+            opacity: 0;
+            animation: fadeSlideUp 0.5s ease 0.3s forwards;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .install-title { color: #ffffff; }
+        }
+        @media (prefers-color-scheme: light) {
+            .install-title { color: #0a2e16; }
+        }
+
+        .install-subtitle {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 50px;
+            color: #55d082;
+            opacity: 0;
+            animation: fadeSlideUp 0.5s ease 0.45s forwards;
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .install-track-wrap {
+            display: none !important; /* Hides the progress bar */
+            width: 100%;
+            max-width: 280px;
+            opacity: 0;
+            animation: fadeSlideUp 0.5s ease 0.6s forwards;
+        }
+
+        .install-track {
+            width: 100%;
+            height: 6px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .install-track { background: rgba(255,255,255,0.1); }
+        }
+        @media (prefers-color-scheme: light) {
+            .install-track { background: rgba(44, 122, 71, 0.15); }
+        }
+
+        .install-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #2c7a47, #55d082, #2c7a47);
+            background-size: 200% 100%;
+            animation: barShimmer 1.8s linear infinite;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes barShimmer {
+            0%   { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .install-status-text {
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            transition: opacity 0.3s ease;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .install-status-text { color: rgba(255,255,255,0.5); }
+        }
+        @media (prefers-color-scheme: light) {
+            .install-status-text { color: rgba(10, 46, 22, 0.5); }
+        }
+
+        .install-tick {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2c7a47, #55d082);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #ffffff;
+            margin-top: 30px;
+            opacity: 0;
+            transform: scale(0);
+            transition: opacity 0.5s ease, transform 0.6s var(--anim-smooth);
+            box-shadow: 0 8px 30px rgba(85, 208, 130, 0.5);
+        }
+
+        .install-tick.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .tick-ripple {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid rgba(85, 208, 130, 0.6);
+            opacity: 0;
+        }
+
+        .tick-ripple.animate {
+            animation: tickRipple 1.4s ease-out forwards;
+        }
+
+        @keyframes tickRipple {
+            0%   { transform: scale(1);   opacity: 0.7; }
+            100% { transform: scale(2.4); opacity: 0;   }
+        }
+
+        .tick-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .install-particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .ip1 { width: 8px;  height: 8px;  background: #55d082; top: 15%; left: 10%; animation: installFloat 3.5s ease-in-out 0.8s infinite; }
+        .ip2 { width: 5px;  height: 5px;  background: rgba(85,208,130,0.5); top: 70%; right: 12%; animation: installFloat 4.2s ease-in-out 1.2s infinite; }
+        .ip3 { width: 10px; height: 10px; background: rgba(44,122,71,0.7); bottom: 20%; left: 20%; animation: installFloat 5.0s ease-in-out 0.4s infinite; }
+        .ip4 { width: 6px;  height: 6px;  background: #b78a1a; top: 30%; right: 8%; animation: installFloat 3.8s ease-in-out 1.8s infinite; }
+
+        @keyframes installFloat {
+            0%,100% { opacity: 0.5; transform: translateY(0) scale(1);     }
+            50%      { opacity: 0.9; transform: translateY(-18px) scale(1.2); }
+        }
+
+        /* =========================================
+           7. OFFLINE TOAST / NOTIFICATION STYLES
+           ========================================= */
+
+        #network-toast {
+            position: fixed;
+            top: max(20px, var(--safe-top));
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            z-index: 100001;
+            padding: 14px 24px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.6s var(--anim-smooth);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            background: #1E293B;
+            border: 1px solid #334155;
+            color: #F1F5F9;
+        }
+
+        #network-toast.offline i {
+            color: #F87171;
+        }
+
+        #network-toast.online i {
+            color: #34D399;
+        }
+
+        #network-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        #network-toast:active {
+            transform: translateX(-50%) translateY(0) scale(0.95);
+        }
+
+        #network-toast i {
+            font-size: 16px;
+        }
+
+        /* =========================================
+           8. STORAGE PERMISSION MODAL
+           ========================================= */
+        #storage-permission-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100002;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: rgba(17, 24, 39, 0.95);
+        }
+
+        #storage-permission-modal.active { display: none !important; }
+
+        .permission-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(240,250,245,0.95));
+            width: 100%;
+            max-width: 360px;
+            padding: 40px 30px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            animation: cardFloatUp 0.7s var(--anim-smooth);
+        }
+
+        .permission-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #2c7a47, #55d082);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 36px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(85, 208, 130, 0.4);
+        }
+
+        .permission-card h2 {
+            font-size: 22px;
+            color: #111;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .permission-card p {
+            font-size: 15px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .permission-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .permission-btn {
+            flex: 1;
+            padding: 16px 20px;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s var(--anim-smooth);
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+
+        .permission-btn.allow {
+            background: linear-gradient(135deg, #2c7a47, #1f6e3f);
+            color: white;
+            box-shadow: 0 8px 20px rgba(44, 122, 71, 0.3);
+        }
+
+        .permission-btn.allow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(44, 122, 71, 0.4);
+        }
+
+        .permission-btn.allow:active {
+            transform: scale(0.96);
+        }
+
+        .permission-btn.deny {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .permission-btn.deny:hover {
+            background: #e5e5e5;
+        }
+
+        .permission-btn.deny:active {
+            transform: scale(0.96);
+        }
+
+        /* =========================================
+           9. DUPLICATE APP ERROR SCREEN
+           ========================================= */
+        #duplicate-app-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100003;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            background: radial-gradient(ellipse at 50% 30%, rgba(231, 76, 60, 0.2) 0%, transparent 60%),
+                        var(--bg-dark);
+            font-family: 'Inter', sans-serif;
+        }
+
+        #duplicate-app-screen.active { display: flex; }
+
+        .duplicate-card {
+            background: var(--bg-card);
+            max-width: 400px;
+            padding: 45px 35px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5),
+                        0 0 0 2px rgba(231, 76, 60, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: errorCardSlideUp 0.8s var(--anim-smooth);
+        }
+
+        .duplicate-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 48px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(231, 76, 60, 0.4);
+            animation: pulseWarning 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseWarning {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .duplicate-card h2 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .duplicate-card p {
+            font-size: 15px;
+            color: #aaaaaa;
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
+
+        .duplicate-info {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .duplicate-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #cccccc;
+        }
+
+        .duplicate-info-item:last-child { margin-bottom: 0; }
+
+        .duplicate-info-item i {
+            color: #e74c3c;
+            font-size: 16px;
+        }
+
+        .uninstall-btn {
+            width: 100%;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            border-radius: 18px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.2s var(--anim-smooth), box-shadow 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.35);
+            touch-action: manipulation;
+        }
+
+        .uninstall-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(231, 76, 60, 0.45);
+        }
+
+        .uninstall-btn:active {
+            transform: scale(0.96);
+        }
+
+        @media (prefers-color-scheme: light) {
+            #duplicate-app-screen {
+                background: radial-gradient(ellipse at 50% 30%, rgba(231, 76, 60, 0.15) 0%, transparent 60%),
+                            #e8f5ed;
+            }
+            .duplicate-card {
+                background: rgba(255, 255, 255, 0.98);
+            }
+            .duplicate-card p { color: #5a6a60; }
+            .duplicate-info-item { color: #444; }
+        }
+
+        /* =========================================
+           10. ALREADY INSTALLED BLOCKER
+           ========================================= */
+        #already-installed-blocker {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100004;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            background: radial-gradient(ellipse at 50% 30%, rgba(44, 122, 71, 0.2) 0%, transparent 60%),
+                        var(--bg-dark);
+            font-family: 'Inter', sans-serif;
+        }
+
+        #already-installed-blocker.active { display: flex; }
+
+        .blocker-card {
+            background: var(--bg-card);
+            max-width: 400px;
+            padding: 45px 35px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5),
+                        0 0 0 2px rgba(44, 122, 71, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: cardFloatUp 0.8s var(--anim-smooth);
+        }
+
+        .blocker-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #55d082, #2c7a47);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 48px;
+            color: #111827;
+            box-shadow: 0 10px 30px rgba(85, 208, 130, 0.4);
+            animation: pulseGreen 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGreen {
+            0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(85, 208, 130, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 15px 40px rgba(85, 208, 130, 0.6); }
+        }
+
+        .blocker-card h2 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #55d082 0%, #2c7a47 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .blocker-card p {
+            font-size: 15px;
+            color: #aaaaaa;
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
+
+        .blocker-info {
+            background: rgba(85, 208, 130, 0.1);
+            border: 1px solid rgba(85, 208, 130, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .blocker-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #cccccc;
+        }
+
+        .blocker-info-item:last-child { margin-bottom: 0; }
+
+        .blocker-info-item i {
+            color: #55d082;
+            font-size: 16px;
+        }
+
+        .open-app-btn {
+            width: 100%;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, #2c7a47 0%, #1f6e3f 100%);
+            color: white;
+            border: none;
+            border-radius: 18px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.2s var(--anim-smooth), box-shadow 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 8px 25px rgba(44, 122, 71, 0.35);
+            touch-action: manipulation;
+        }
+
+        .open-app-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(44, 122, 71, 0.45);
+        }
+
+        .open-app-btn:active {
+            transform: scale(0.96);
+        }
+
+        @media (prefers-color-scheme: light) {
+            #already-installed-blocker {
+                background: radial-gradient(ellipse at 50% 30%, rgba(44, 122, 71, 0.15) 0%, transparent 60%),
+                            #e8f5ed;
+            }
+            .blocker-card {
+                background: rgba(255, 255, 255, 0.98);
+            }
+            .blocker-card p { color: #5a6a60; }
+            .blocker-info-item { color: #444; }
+        }
+
+        /* =========================================
+           11. POST-INSTALLATION GUIDE
+           ========================================= */
+        #post-install-guide {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            background: radial-gradient(ellipse at 40% 60%, rgba(44, 122, 71, 0.18) 0%, transparent 70%),
+                        radial-gradient(ellipse at 70% 30%, rgba(85, 208, 130, 0.10) 0%, transparent 60%),
+                        var(--bg-dark);
+            font-family: 'Inter', sans-serif;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        #post-install-guide.active { 
+            display: flex; 
+            opacity: 1;
+        }
+
+        #post-install-guide.fade-out { opacity: 0; }
+
+        .guide-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(240,250,245,0.95));
+            width: 100%;
+            max-width: 360px;
+            padding: 32px 24px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3), 
+                        inset 0 0 0 1.5px rgba(255,255,255,0.8);
+            animation: cardFloatUp 0.8s var(--anim-smooth);
+        }
+
+        .guide-icon {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(145deg, #1f6e3f, #55d082);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 44px;
+            color: #ffffff;
+            box-shadow: 0 12px 40px rgba(85, 208, 130, 0.45),
+                        inset 0 1px 0 rgba(255,255,255,0.3);
+            animation: iconBounceIn 0.8s var(--anim-smooth) forwards;
+        }
+
+        .guide-card h2 {
+            font-size: 19px;
+            color: #111;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .guide-subtitle {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 22px;
+            line-height: 1.5;
+        }
+
+        .guide-steps {
+            text-align: left;
+            margin-bottom: 30px;
+        }
+
+        .guide-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(85, 208, 130, 0.08);
+            border-radius: 16px;
+            border: 1px solid rgba(85, 208, 130, 0.15);
+            transition: transform 0.3s var(--anim-smooth), background 0.3s ease;
+        }
+
+        .guide-step:hover {
+            transform: translateX(5px);
+            background: rgba(85, 208, 130, 0.12);
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #2c7a47, #55d082);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            font-size: 13px;
+            color: #111;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .proceed-btn {
+            width: 100%;
+            padding: 15px 20px;
+            background: linear-gradient(270deg, #2c7a47, #005c4b, #1f6e3f);
+            background-size: 400% 400%;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.2s var(--anim-smooth), box-shadow 0.3s ease;
+            box-shadow: 0 10px 25px rgba(44, 122, 71, 0.3);
+            animation: colorShift 6s ease infinite;
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+
+        .proceed-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 30px rgba(44, 122, 71, 0.4);
+        }
+
+        .proceed-btn:active {
+            transform: scale(0.96) translateY(0);
+        }
+
+        @media (prefers-color-scheme: light) {
+            #post-install-guide {
+                background: radial-gradient(ellipse at 40% 60%, rgba(44, 122, 71, 0.12) 0%, transparent 70%),
+                            radial-gradient(ellipse at 70% 30%, rgba(85, 208, 130, 0.08) 0%, transparent 60%),
+                            #e8f5ed;
+            }
+        }
+        
+        /* =========================================
+           12. SYNC BADGE & STALE DATA WARNING 
+           ========================================= */
+        #sync-status-badge {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(44, 122, 71, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 2500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.4s var(--anim-smooth);
+            pointer-events: none;
+            opacity: 0;
+        }
+        #sync-status-badge.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        #stale-warning {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            z-index: 2500;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        /* =========================================
+           13. NEW: OFFLINE MACRO BANNER
+           ========================================= */
+        #offline-macro-banner {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-30px) scale(0.95);
+            background: rgba(231, 76, 60, 0.95);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            z-index: 2500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        #offline-macro-banner.show {
+            transform: translateX(-50%) translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        .offline-pulse {
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: offlinePulseAnim 1.5s infinite;
+        }
+
+        @keyframes offlinePulseAnim {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+
+        /* =========================================
+           PAYMENT NOTIFICATION AD
+           ========================================= */
+        #payment-ad-overlay {
+            position: fixed; inset: 0;
+            z-index: 5000;
+            display: none;
+            flex-direction: column;
+            justify-content: flex-end;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #payment-ad-overlay.pay-ad-visible {
+            display: flex;
+        }
+        #payment-ad-overlay.pay-ad-show {
+            opacity: 1;
+        }
+        #payment-ad-bg-img {
+            position: absolute; inset: 0;
+            background: url('https://img.freepik.com/free-vector/salary-payment-concept-illustration-with-man-get-income-his-job_513217-187.jpg?semt=ais_hybrid&w=740&q=80') center / cover no-repeat;
+            background-color: #f0fdf4;
+        }
+        #payment-ad-close-x {
+            position: absolute;
+            top: max(18px, var(--safe-top));
+            right: 18px;
+            width: 40px; height: 40px;
+            background: rgba(255,255,255,0.92);
+            border: none; border-radius: 50%;
+            font-size: 18px; color: #374151;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 3;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+            transition: transform 0.15s ease, background 0.2s ease;
+            touch-action: manipulation;
+            font-family: 'Inter', sans-serif;
+        }
+        #payment-ad-close-x:active { transform: scale(0.88); background: rgba(255,255,255,1); }
+        #payment-ad-card {
+            position: relative; z-index: 2;
+            background: #ffffff;
+            border-radius: 28px 28px 0 0;
+            padding: 26px 22px max(34px, calc(20px + var(--safe-bottom)));
+            box-shadow: 0 -6px 32px rgba(0,0,0,0.13);
+            font-family: 'Inter', sans-serif;
+            transform: translateY(100%);
+            animation: payCardSlideUp 0.58s cubic-bezier(0.2, 0.82, 0.2, 1.05) 0.18s forwards;
+        }
+        @keyframes payCardSlideUp {
+            to { transform: translateY(0); }
+        }
+        .pay-ad-pill {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: #f0fdf4;
+            border: 1.5px solid #bbf7d0;
+            color: #15803d;
+            font-size: 11px; font-weight: 700;
+            letter-spacing: 0.5px; text-transform: uppercase;
+            padding: 5px 13px; border-radius: 50px;
+            margin-bottom: 14px;
+        }
+        .pay-ad-pill i { font-size: 13px; }
+        .pay-ad-heading {
+            font-size: 24px; font-weight: 900;
+            color: #0f172a; line-height: 1.2;
+            letter-spacing: -0.4px;
+            margin: 0 0 18px 0;
+        }
+        .pay-ad-date-box {
+            display: flex; align-items: center; gap: 14px;
+            background: linear-gradient(135deg, #1f6e3f 0%, #55d082 100%);
+            color: #ffffff;
+            border-radius: 18px;
+            padding: 16px 20px;
+            margin-bottom: 14px;
+            box-shadow: 0 6px 22px rgba(44,122,71,0.28);
+        }
+        .pay-ad-date-box i { font-size: 26px; opacity: 0.9; flex-shrink: 0; }
+        .pay-ad-date-inner { display: flex; flex-direction: column; gap: 1px; }
+        .pay-ad-date-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; opacity: 0.8; }
+        #payment-ad-date-value { font-size: 22px; font-weight: 900; letter-spacing: -0.3px; line-height: 1.2; }
+        .pay-ad-note {
+            font-size: 13px; color: #64748b;
+            line-height: 1.65; margin: 0 0 20px 0;
+        }
+        .pay-ad-cta {
+            width: 100%; padding: 16px;
+            background: linear-gradient(270deg, #2c7a47, #005c4b, #1f6e3f);
+            background-size: 400% 400%;
+            color: #ffffff; border: none; border-radius: 16px;
+            font-size: 16px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            box-shadow: 0 8px 22px rgba(44,122,71,0.32);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            touch-action: manipulation;
+            animation: colorShift 6s ease infinite;
+        }
+        .pay-ad-cta:active { transform: scale(0.97); box-shadow: 0 4px 10px rgba(44,122,71,0.25); }
+
+    </style>
+<base target="_blank">
+</head>
+<body>
+
+    <!-- INSTAGRAM-STYLE LOADER -->
+    <div id="ig-loader">
+        <div class="ig-icon-wrap"><i class="fas fa-elephant"></i></div>
+        <p class="ig-from"> <span>Shwari | Finance</span></p>
+    </div>
+
+    <div class="bg-layer" id="splash-layer" style="display:none!important;">
+    <div class="spark spark-1"></div>
+    <div class="spark spark-2"></div>
+    <div class="spark spark-3"></div>
+    <div class="spark spark-4"></div>
+    <div class="spark spark-5"></div>
+    <div class="spark spark-6"></div>
+    <div class="spark spark-7"></div>
+    <div class="spark spark-8"></div>
+    <div class="spark spark-9"></div>
+    <div class="spark spark-10"></div>
+    <div class="spark spark-11"></div>
+    <div class="spark spark-12"></div>
+
+    <div class="orbit-wrapper" style="display:none;">
+        <div class="orbit-track">
+            <i class="fas fa-box-open orbit-icon oi-1"></i>
+            <i class="fas fa-broom orbit-icon oi-2"></i>
+            <i class="fas fa-people-carry-box orbit-icon oi-3"></i>
+            <i class="fas fa-tape orbit-icon oi-4"></i>
+            <i class="fas fa-shirt orbit-icon oi-5"></i>
+            <i class="fas fa-bucket orbit-icon oi-6"></i>
+        </div>
+    </div>
+
+    <img class="splash-center-img" src="https://media.licdn.com/dms/image/v2/D4D03AQErv_z_NGURRA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1672996075297?e=2147483647&v=beta&t=KlV4lX3Wb3kGqBVWLH0Pu3w-XYgXiQFOkp0JGwa9cOU" />
+</div>
+
+    <div id="network-toast">
+        <i class="fas fa-wifi"></i>
+        <span id="toast-message">Checking connection...</span>
+    </div>
+    
+    <!-- New Sync and Stale Indicators -->
+    <div id="sync-status-badge">
+        <i class="fas fa-check-circle"></i> Last synced: now
+    </div>
+    
+    <div id="device-error">
+        <div class="error-card">
+            <i class="fas fa-mobile-screen" style="font-size:60px; color:#55d082; margin-bottom:20px;"></i>
+            <h2>Mobile Application</h2>
+            <p>Shwari | Finance App is strictly optimized for mobile devices mode. For any other issues, reset your Display / Font size in your smartphone to access your Account.</p>
+        </div>
+    </div>
+
+    <div id="duplicate-app-screen">
+        <div class="duplicate-card">
+            <div class="duplicate-icon">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <h2>Duplicate App Detected</h2>
+            <p>Another version of Shwari | Finance is already installed on this device. Please uninstall the old version before using this one.</p>
+            <div class="duplicate-info">
+                <div class="duplicate-info-item">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <span>Multiple app instances detected</span>
+                </div>
+                <div class="duplicate-info-item">
+                    <i class="fas fa-box-open"></i>
+                    <span>Conflicting service workers found</span>
+                </div>
+                <div class="duplicate-info-item">
+                    <i class="fas fa-database"></i>
+                    <span>Cache storage conflicts</span>
+                </div>
+            </div>
+            <button class="uninstall-btn" id="uninstall-old-btn">
+                <i class="fas fa-trash-can"></i>
+                <span>Uninstall Old Version</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="storage-permission-modal">
+        <div class="permission-card">
+            <div class="permission-icon">
+                <i class="fas fa-database"></i>
+            </div>
+            <h2>Storage Permission Required</h2>
+            <p>Shwari | Finance needs permission to store data locally on your device for offline access and better performance.</p>
+            <div class="permission-buttons">
+                <button class="permission-btn deny" id="deny-storage-btn">Not Now</button>
+                <button class="permission-btn allow" id="allow-storage-btn">Allow</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="forcedInstall">
+        <div class="install-card">
+            <i class="fas fa-mobile-screen-button" style="font-size:60px; color:#55d082; margin-bottom:20px;"></i>
+            <h2 style="font-size: 24px; font-weight: 800; color: #55d082; margin-bottom: 12px;">Install App to Continue</h2>
+            <p style="font-size: 15px; color: #aaaaaa; margin-bottom: 30px;">For your security, Shwari | Finance must be installed to your phone to access the dashboard.</p>
+            <button class="install-btn" id="installAction">
+                <i class="fas fa-download"></i> <span>Install Now</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="auth-portal" class="hidden">
+        <div id="reg-screen" class="auth-card hidden">
+            <div class="auth-icon"><i class="fas fa-fingerprint"></i></div>
+            <h2>Device Activation</h2>
+            <p class="desc-text">Register this device once to secure access.</p>
+            <div class="input-group">
+                <input type="text" id="reg-name" placeholder="Full Name (e.g. Surname , Other)" autocomplete="off" autocapitalize="words">
+                <div class="error-message" id="name-error">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <span>Please enter your full name</span>
+                </div>
+            </div>
+            <div class="input-group">
+                <input type="email" id="reg-email" placeholder="Registered Email" autocomplete="off" autocapitalize="none">
+                <div class="error-message" id="email-error">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <span>Please enter a valid email address</span>
+                </div>
+            </div>
+            <button class="auth-btn" id="activate-btn">Activate Device</button>
+        </div>
+    </div>
+
+    <div id="continue-overlay" class="hidden">
+        <div class="continue-header">
+            <h3 class="dept-title">Shwari | Finance<br></h3>
+            <p class="dept-subtitle">Self Service Portal</p>
+        </div>
+
+        <div class="continue-footer">
+            <div id="elephant-gate" class="elephant-gate">
+                <div class="unlock-ring"></div>
+                <i class="fas fa-elephant elephant-icon"></i>
+            </div>
+            
+            <div id="employee-info" class="employee-info">
+                <div class="water-wave"></div>
+                <i class="fa-solid fa-elephant elephant-icon-small"></i>
+                <div class="text-group">
+                    <h2 id="display-name" class="medium-font"></h2>
+                    <p id="display-email" class="small-email"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wrapper" id="ui">
+        <div class="shockwave"></div>
+        <div class="particle p1"></div>
+        <div class="particle p2"></div>
+        <div class="particle p3"></div>
+        <div class="particle p4"></div>
+    </div>
+
+    <div class="app" id="app">
+        <div id="stale-warning">
+            <i class="fas fa-triangle-exclamation"></i> Data may be outdated (>24h old)
+        </div>
+        
+        <!-- NEW INSTANT OFFLINE BANNER -->
+        <div id="offline-macro-banner">
+            <div class="offline-pulse"></div>
+            <span>Offline Mode</span>
+        </div>
+
+        <iframe id="macro-frame"></iframe>
+    </div>
+
+    <div id="install-progress-screen">
+        <div class="install-particle ip1"></div>
+        <div class="install-particle ip2"></div>
+        <div class="install-particle ip3"></div>
+        <div class="install-particle ip4"></div>
+
+        <div class="install-app-icon">
+            <i class="fas fa-elephant"></i>
+        </div>
+
+        <p class="install-title">Installing Shwari | Finance</p>
+        <p class="install-subtitle">Setting up your portal</p>
+
+        <div class="install-track-wrap">
+            <div class="install-track">
+                <div class="install-bar" id="install-bar"></div>
+            </div>
+            <p class="install-status-text" id="install-status-text">Preparing files…</p>
+        </div>
+
+        <div class="tick-wrap" id="tick-wrap">
+            <div class="tick-ripple" id="tick-ripple-1"></div>
+            <div class="tick-ripple" id="tick-ripple-2" style="animation-delay:0.3s;"></div>
+            <div class="install-tick" id="install-tick">
+                <i class="fas fa-check"></i>
+            </div>
+        </div>
+    </div>
+
+    <div id="already-installed-blocker">
+        <div class="blocker-card">
+            <div class="blocker-icon">
+                <i class="fas fa-mobile-screen"></i>
+            </div>
+            <h2>App Only Access</h2>
+            <p>The Shwari | Finance Account are not accessible via the browser. You have already installed the app on this device.</p>
+            <div class="blocker-info">
+                <div class="blocker-info-item">
+                    <i class="fas fa-ban"></i>
+                    <span>Browser access blocked for security</span>
+                </div>
+                <div class="blocker-info-item">
+                    <i class="fas fa-home"></i>
+                    <span>Locate the green Elephant icon on your home screen</span>
+                </div>
+                <div class="blocker-info-item">
+                    <i class="fas fa-circle-check"></i>
+                    <span>Launch the app directly to proceed</span>
+                </div>
+            </div>
+            <button class="open-app-btn" id="open-shwari-btn">
+                <i class="fas fa-arrow-up-right-from-square"></i>
+                <span>Close Browser & Open App</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="post-install-guide">
+        <div class="guide-card">
+            <div class="guide-icon">
+                <i class="fas fa-elephant"></i>
+            </div>
+            <h2>Installation Complete!</h2>
+            <p class="guide-subtitle">Follow these steps to start using Shwari | Finance</p>
+            
+            <div class="guide-steps">
+                <div class="guide-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Close Browser Tab</h3>
+                        <p>Close this browser tab to avoid duplicate instances</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Find on Home Screen</h3>
+                        <p>Look for the green elephant icon on your home screen</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Launch App</h3>
+                        <p>Tap the Shwari | Finance icon to open your portal</p>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="proceed-btn" id="close-browser-btn">
+                <i class="fas fa-check-circle"></i>
+                <span>I've Closed the Browser</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        "use strict";
+
+        // =========================================
+        // OFFLINE SYNC - INDEXEDDB WRAPPER
+        // =========================================
+        const ShwariDB = {
+            dbName: 'ShwariDB',
+            storeName: 'macro_cache',
+            init() {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(this.dbName, 1);
+                    req.onupgradeneeded = (e) => {
+                        e.target.result.createObjectStore(this.storeName, { keyPath: 'id' });
+                    };
+                    req.onsuccess = (e) => resolve(e.target.result);
+                    req.onerror = (e) => reject(e.error);
+                });
+            },
+            async save(html) {
+                const db = await this.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(this.storeName, 'readwrite');
+                    const store = tx.objectStore(this.storeName);
+                    store.put({ id: 'macro_html', html: html, timestamp: Date.now() });
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = (e) => reject(e.error);
+                });
+            },
+            async get() {
+                const db = await this.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(this.storeName, 'readonly');
+                    const store = tx.objectStore(this.storeName);
+                    const req = store.get('macro_html');
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = (e) => reject(e.error);
+                });
+            }
+        };
+
+        // =========================================
+        // CAPABILITY-AWARE FULLSCREEN MANAGER
+        // =========================================
+        const FullscreenManager = {
+            isSupported: false,
+            isActive: false,
+            hasAttempted: false,
+            isNativeApp: false,
+
+            init() {
+                this.isNativeApp = (
+                    window.matchMedia('(display-mode: standalone)').matches || 
+                    window.navigator.standalone === true || 
+                    document.referrer.includes('android-app://')
+                );
+                
+                this.checkSupport();
+                
+                if (this.isNativeApp) {
+                    this.applyStableViewport();
+                    return;
+                }
+                
+                if (this.isSupported) {
+                    this.applyStableViewport();
+                    this.bindInteractionTrigger();
+                    this.bindFullscreenChange();
+                    this.bindKeyboardHandlers();
+                    this.bindResizeHandler();
+                }
+            },
+
+            checkSupport() {
+                const el = document.documentElement;
+                this.isSupported = !!(
+                    el.requestFullscreen || 
+                    el.webkitRequestFullscreen || 
+                    el.msRequestFullscreen
+                );
+            },
+
+            applyStableViewport() {
+                const setVH = () => {
+                    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                    document.documentElement.style.setProperty('--vh', `${vh * 0.01}px`);
+                };
+                setVH();
+                window.addEventListener('resize', setVH, { passive: true });
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', setVH, { passive: true });
+                }
+            },
+
+            async enter() {
+                if (this.hasAttempted || this.isActive || !this.isSupported || this.isNativeApp) return;
+                this.hasAttempted = true;
+
+                const el = document.documentElement;
+                try {
+                    let promise;
+                    if (el.requestFullscreen) {
+                        promise = el.requestFullscreen();
+                    } else if (el.webkitRequestFullscreen) {
+                        promise = el.webkitRequestFullscreen();
+                    } else if (el.msRequestFullscreen) {
+                        promise = el.msRequestFullscreen();
+                    }
+                    
+                    if (promise) await promise;
+                    this.isActive = true;
+                    document.body.classList.add('is-fullscreen');
+                    
+                    if (screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('portrait').catch(() => {});
+                    }
+                } catch (err) {
+                    console.log('Fullscreen capability rejected:', err.name);
+                    this.isActive = false;
+                    document.body.classList.remove('is-fullscreen');
+                }
+            },
+
+            bindInteractionTrigger() {
+                const triggerEvents = ['touchstart', 'click', 'keydown'];
+                const handler = (e) => {
+                    if (e.type === 'touchstart' && e.touches.length > 1) return;
+                    this.enter();
+                    triggerEvents.forEach(evt => document.removeEventListener(evt, handler));
+                };
+                triggerEvents.forEach(evt => document.addEventListener(evt, handler, { passive: true }));
+            },
+
+            bindFullscreenChange() {
+                const handler = () => {
+                    const active = !!(
+                        document.fullscreenElement || 
+                        document.webkitFullscreenElement || 
+                        document.msFullscreenElement
+                    );
+                    this.isActive = active;
+                    document.body.classList.toggle('is-fullscreen', active);
+                    
+                    if (!active && this.hasAttempted) {
+                        this.hasAttempted = false;
+                    }
+                };
+                document.addEventListener('fullscreenchange', handler);
+                document.addEventListener('webkitfullscreenchange', handler);
+                document.addEventListener('msfullscreenchange', handler);
+            },
+
+            bindKeyboardHandlers() {
+                const inputs = document.querySelectorAll('input');
+                inputs.forEach(input => {
+                    input.addEventListener('focus', () => {
+                        document.body.classList.add('keyboard-open');
+                        setTimeout(() => {
+                            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 50); 
+                    });
+                    input.addEventListener('blur', () => {
+                        document.body.classList.remove('keyboard-open');
+                    });
+                });
+
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', () => {
+                        const vv = window.visualViewport;
+                        const isKeyboardOpen = vv.height < window.innerHeight * 0.75;
+                        const authPortal = document.getElementById('auth-portal');
+
+                        authPortal.style.height = vv.height + 'px';
+                        authPortal.style.top = vv.offsetTop + 'px';
+                        authPortal.style.background = '#000000';
+
+                        document.body.classList.toggle('keyboard-open', isKeyboardOpen);
+                        authPortal.classList.toggle('keyboard-adjust', isKeyboardOpen);
+                    }, { passive: true });
+                }
+            },
+
+            bindResizeHandler() {
+                let resizeTimer;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => {
+                        window.dispatchEvent(new Event('vh-update'));
+                    }, 150);
+                }, { passive: true });
+            }
+        };
+
+        FullscreenManager.init();
+
+        // =========================================
+        // BACKEND & ENHANCED MACRO INITIALIZATION
+        // =========================================
+        const MACRO_URL = "https://script.google.com/macros/s/AKfycbz2ns6LkPboQ0HxsHqITIAqLZEP9Ju7b4FtGLaDHkxpGOCMyWV9mQNTOsyAFVnSzK8O/exec";
+        
+        // Super Stable Macro Engine with Blob Offline Injection
+        const MacroEngine = {
+            url: MACRO_URL,
+            frame: document.getElementById('macro-frame'),
+            retries: 0,
+            maxRetries: 3,
+            loaded: false,
+            timeoutId: null,
+            reconnectInterval: null,
+            isOfflineView: false,
+
+            async loadOfflineBlob() {
+                try {
+                    const data = await ShwariDB.get('macro_html');
+                    if (data && data.html) {
+                        const age = Date.now() - data.timestamp;
+                        if (age > 24 * 60 * 60 * 1000) {
+                            document.getElementById('stale-warning').style.display = 'flex';
+                        }
+                        
+                        const blob = new Blob([data.html], { type: 'text/html' });
+                        const objUrl = URL.createObjectURL(blob);
+                        this.frame.src = objUrl;
+                        this.loaded = true;
+                        this.isOfflineView = true;
+                        
+                        // Show the enhanced animated offline banner
+                        const offlineBanner = document.getElementById('offline-macro-banner');
+                        if (offlineBanner) {
+                            const age = Date.now() - (data.timestamp || 0);
+                            const mins = Math.max(0, Math.floor(age / 60000));
+                            const timeLabel = mins < 1 ? 'now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins/60)}h ago`;
+                            offlineBanner.innerHTML = `<div class="offline-pulse"></div><span>Network · Lost ${timeLabel}</span>`;
+                            offlineBanner.style.background = 'rgba(231, 76, 60, 0.95)';
+                            offlineBanner.style.boxShadow = '0 8px 25px rgba(231, 76, 60, 0.4)';
+                            offlineBanner.classList.add('show');
+                        }
+
+                        if (window.onMacroSuccess) window.onMacroSuccess();
+                        this.updateSyncBadge(data.timestamp, true);
+                    } else {
+                        throw new Error("No offline data available");
+                    }
+                } catch(e) {
+    console.log("No offline snapshot found, injecting fallback shell...");
+    const fallbackHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"><title>Offline</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111827;color:#fff;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:30px}.icon{width:80px;height:80px;background:linear-gradient(135deg,#1f6e3f,#55d082);border-radius:24px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;font-size:40px}.title{font-size:24px;font-weight:800;color:#55d082;margin-bottom:12px}.msg{font-size:14px;color:#94a3b8;line-height:1.6;max-width:300px;margin-bottom:30px}.loader{width:40px;height:40px;border:3px solid rgba(85,208,130,0.2);border-top:3px solid #55d082;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="icon">🐘</div><div class="title">Offline Mode</div><div class="msg">No cached data yet. Please open the app while online first to enable offline access.</div><div class="loader"></div><script>window.addEventListener('online',()=>window.location.reload());setInterval(()=>{if(navigator.onLine)window.location.reload();},4000);<\/script></body></html>`;
+    const blob = new Blob([fallbackHtml], { type: 'text/html' });
+    this.frame.src = URL.createObjectURL(blob);
+    this.loaded = true;
+    if (window.onMacroSuccess) window.onMacroSuccess();
+}
+            },
+
+            async silentSync() {
+                try {
+                    const res = await fetch(`${this.url}?cb=${Date.now()}&client=shwari_app`);
+                    if(res.ok) {
+                        const html = await res.text();
+                        await ShwariDB.save(html);
+                        this.updateSyncBadge(Date.now(), false);
+                    }
+                } catch (e) {
+                    console.log("Silent sync fetch skipped or failed.");
+                }
+            },
+
+            updateSyncBadge(timestamp, isOffline = false) {
+                // Sync notification hidden
+                return;
+            },
+
+            async load() {
+                this.loaded = false;
+                this.isOfflineView = false;
+                clearTimeout(this.timeoutId);
+                console.log(`Loading Macro... Attempt ${this.retries + 1}`);
+
+                // Reset and hide the banner unless it's currently showing the reload animation
+                const offlineBanner = document.getElementById('offline-macro-banner');
+                if (offlineBanner && !offlineBanner.innerHTML.includes('fa-spinner')) {
+                    offlineBanner.classList.remove('show');
+                }
+
+                if (!navigator.onLine) {
+                    await this.loadOfflineBlob();
+                    return;
+                }
+                
+                // OFFLINE INTERCEPT: Never set live URL if offline — serve IDB snapshot directly
+                if (!navigator.onLine) {
+                    await this.loadOfflineBlob();
+                    return;
+                }
+                this.frame.src = `${this.url}?cb=${Date.now()}&client=shwari_app`;
+
+                this.frame.onerror = () => {
+                    console.warn("Iframe onerror fired — loading offline blob.");
+                    clearTimeout(this.timeoutId);
+                    this.loadOfflineBlob();
+                };
+                
+                this.timeoutId = setTimeout(() => this.handleTimeout(), 15000);
+
+                this.frame.onload = () => {
+                    // Detect browser error pages (net::ERR_* shown inside iframe)
+                    let isErrorPage = false;
+                    try {
+                        const loc = this.frame.contentWindow && this.frame.contentWindow.location;
+                        if (loc && (loc.href === 'about:blank' || loc.href.startsWith('chrome-error://') || loc.href.startsWith('data:text/html'))) {
+                            isErrorPage = true;
+                        }
+                    } catch(e) {
+                        isErrorPage = false;
+                    }
+
+                    if (isErrorPage) {
+                        console.warn("Iframe loaded an error page — falling back to offline blob.");
+                        this.loadOfflineBlob();
+                        return;
+                    }
+
+                    this.loaded = true;
+                    this.isOfflineView = false;
+                    clearTimeout(this.timeoutId);
+                    
+                    if (offlineBanner) offlineBanner.classList.remove('show');
+
+                    if (this.reconnectInterval) {
+                        clearInterval(this.reconnectInterval);
+                        this.reconnectInterval = null;
+                    }
+                    console.log("Macro loaded successfully.");
+
+                    // SAVE TO IDB every time macro loads online — keeps offline snapshot fresh
+                    if (navigator.onLine) {
+                        this.silentSync();
+                        setTimeout(async () => {
+                            try {
+                                const res = await fetch(`${this.url}?cb=${Date.now()}&client=shwari_offline_snap`);
+                                if (res.ok) {
+                                    const html = await res.text();
+                                    const isReal = html.length > 1000 &&
+                                        !html.toLowerCase().includes('accounts.google.com') &&
+                                        !html.toLowerCase().includes('sign in');
+                                    if (isReal) {
+                                        await ShwariDB.save(html);
+                                        console.log('[IDB] Offline snapshot saved —', Math.round(html.length/1024), 'KB');
+                                        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                                            navigator.serviceWorker.controller.postMessage({ type: 'FORCE_MACRO_CACHE', html });
+                                        }
+                                    }
+                                }
+                            } catch(e) { console.log('[IDB] Snapshot save skipped:', e.message); }
+                        }, 3000);
+                    }
+                    
+                    if (window.onMacroSuccess) window.onMacroSuccess();
+                };
+            },
+
+            handleTimeout() {
+                if (this.loaded) return;
+                console.warn("Macro load timeout. Retrying...");
+                this.retries++;
+                
+                if (this.retries <= this.maxRetries) {
+                    setTimeout(() => this.load(), 2000 * this.retries);
+                } else {
+                    console.error("Macro failed to load after maximum retries.");
+                    this.loadOfflineBlob(); // Display offline fallback on max failures
+                    
+                    if (!this.reconnectInterval) {
+                        this.reconnectInterval = setInterval(() => {
+                            if (navigator.onLine && !this.loaded) {
+                                this.retries = 0;
+                                this.load();
+                            }
+                        }, 10000);
+                    }
+                }
+            }
+        };
+
+        const APP_VERSION = '7.0.0';
+        const APP_INSTANCE_ID = 'shwari-finance-' + Date.now();
+
+        // =========================================
+        // SUPER RESPONSIVE BUTTON INITIALIZATION
+        // =========================================
+        function initSuperResponsiveButtons() {
+            const allButtons = document.querySelectorAll('button, .auth-btn, .install-btn, .uninstall-btn, .permission-btn');
+            
+            allButtons.forEach(btn => {
+                btn.addEventListener('touchstart', function(e) {
+                    this.style.transform = 'scale(0.96)';
+                    this.style.transition = 'transform 0.1s ease';
+                }, { passive: true });
+                
+                btn.addEventListener('touchend', function(e) {
+                    this.style.transform = '';
+                    setTimeout(() => {
+                        this.style.transition = '';
+                    }, 100);
+                }, { passive: true });
+                
+                btn.addEventListener('touchcancel', function(e) {
+                    this.style.transform = '';
+                }, { passive: true });
+
+                btn.addEventListener('mousedown', function(e) {
+                    this.style.transform = 'scale(0.96)';
+                });
+                
+                btn.addEventListener('mouseup', function(e) {
+                    this.style.transform = '';
+                });
+                
+                btn.addEventListener('mouseleave', function(e) {
+                    this.style.transform = '';
+                });
+
+                btn.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.style.transform = 'scale(0.96)';
+                        this.click();
+                        setTimeout(() => {
+                            this.style.transform = '';
+                        }, 150);
+                    }
+                });
+
+                btn.addEventListener('focus', function(e) {
+                    this.style.outline = '2px solid #55d082';
+                    this.style.outlineOffset = '2px';
+                });
+                
+                btn.addEventListener('blur', function(e) {
+                    this.style.outline = '';
+                    this.style.outlineOffset = '';
+                });
+
+                btn.addEventListener('click', function(e) {
+                    if (this.dataset.processing === 'true') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                    }
+                });
+            });
+        }
+
+        // =========================================
+        // DUPLICATE APP DETECTION
+        // =========================================
+        function checkDuplicateApp() {
+            return new Promise((resolve) => {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        const shwariRegs = registrations.filter(reg => 
+                            reg.scope && reg.scope.includes('shwari')
+                        );
+                        
+                        if (shwariRegs.length > 1) {
+                            showDuplicateAppScreen();
+                            resolve(true);
+                        } else {
+                            const existingInstance = localStorage.getItem('shwari_instance_id');
+                            const existingVersion = localStorage.getItem('shwari_app_version');
+                            
+                            if (existingInstance && existingInstance !== APP_INSTANCE_ID) {
+                                if (existingVersion && compareVersions(existingVersion, APP_VERSION) > 0) {
+                                    showDuplicateAppScreen();
+                                    resolve(true);
+                                    return;
+                                }
+                            }
+                            
+                            localStorage.setItem('shwari_instance_id', APP_INSTANCE_ID);
+                            localStorage.setItem('shwari_app_version', APP_VERSION);
+                            resolve(false);
+                        }
+                    });
+                } else {
+                    resolve(false);
+                }
+            });
+        }
+
+        function compareVersions(v1, v2) {
+            const parts1 = v1.split('.').map(Number);
+            const parts2 = v2.split('.').map(Number);
+            
+            for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+                const p1 = parts1[i] || 0;
+                const p2 = parts2[i] || 0;
+                if (p1 > p2) return 1;
+                if (p1 < p2) return -1;
+            }
+            return 0;
+        }
+
+        function showDuplicateAppScreen() {
+            document.getElementById('duplicate-app-screen').classList.add('active');
+        }
+
+        document.getElementById('uninstall-old-btn').addEventListener('click', async function() {
+            this.dataset.processing = 'true';
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Uninstalling...</span>';
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const reg of registrations) {
+                        await reg.unregister();
+                    }
+                }
+                
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                
+                const currentInstance = localStorage.getItem('shwari_instance_id');
+                localStorage.clear();
+                localStorage.setItem('shwari_instance_id', APP_INSTANCE_ID);
+                localStorage.setItem('shwari_app_version', APP_VERSION);
+                
+                window.location.reload();
+            } catch (error) {
+                console.error('Uninstall error:', error);
+                this.innerHTML = '<i class="fas fa-triangle-exclamation"></i><span>Error - Try Manual Uninstall</span>';
+            }
+        });
+
+        // =========================================
+        // STORAGE PERMISSION HANDLING
+        // =========================================
+        function requestStoragePermission() {
+            localStorage.setItem('shwari_storage_permission', 'granted');
+            return Promise.resolve(true);
+        }
+
+        // =========================================
+        // ENHANCED SERVICE WORKER REGISTRATION
+        // =========================================
+        async function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('sw.js');
+                    console.log('SW registered:', registration.scope);
+
+                    // Show force-update modal when a new worker installs
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (!newWorker) return;
+
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // New version is cached and ready — prompt the user immediately
+                                showUpdateNotification();
+                            }
+                        });
+                    });
+
+                    // After the user clicks "Update Now", the SW sends SKIP_WAITING.
+                    // controllerchange fires once the new SW takes control — reload instantly.
+                    let refreshing = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!refreshing) {
+                            refreshing = true;
+                            window.location.reload(true);
+                        }
+                    });
+
+                    // Also check if there is already a waiting worker on page load
+                    // (e.g. user had the page open when update was cached)
+                    if (registration.waiting) {
+                        showUpdateNotification();
+                    }
+
+                    // Poll every 10 s so a new worker that arrives after page load
+                    // is caught and surfaced to the user without requiring a reload.
+                    setInterval(() => {
+                        registration.update().then(() => {
+                            if (registration.waiting && !document.getElementById('force-update-modal')) {
+                                showUpdateNotification();
+                            }
+                        }).catch(() => {});
+                    }, 10000);
+                    return registration;
+                } catch (error) {
+                    console.error('SW registration failed:', error);
+                }
+            }
+        }
+
+        function showUpdateNotification() {
+            // Remove any existing update modal
+            const existing = document.getElementById('force-update-modal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'force-update-modal';
+            modal.style.cssText = `
+                position: fixed;
+                inset: 0;
+                z-index: 999999;
+                background: rgba(10, 16, 28, 0.97);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                font-family: 'Inter', system-ui, sans-serif;
+                animation: fuModalFadeIn 0.4s ease forwards;
+            `;
+
+            modal.innerHTML = `
+                <style>
+                    @keyframes fuModalFadeIn {
+                        from { opacity: 0; }
+                        to   { opacity: 1; }
+                    }
+                    @keyframes fuCardSlideUp {
+                        from { opacity: 0; transform: translateY(40px) scale(0.95); }
+                        to   { opacity: 1; transform: translateY(0)   scale(1);    }
+                    }
+                    @keyframes fuSpin {
+                        to { transform: rotate(360deg); }
+                    }
+                    @keyframes fuPulseGreen {
+                        0%, 100% { box-shadow: 0 0 0 0 rgba(85,208,130,0.5); }
+                        50%      { box-shadow: 0 0 0 14px rgba(85,208,130,0); }
+                    }
+                    @keyframes fuBarShimmer {
+                        from { background-position: 200% center; }
+                        to   { background-position: -200% center; }
+                    }
+                    #fu-card {
+                        background: linear-gradient(160deg, #1a2635 0%, #111827 100%);
+                        border: 1px solid rgba(85,208,130,0.25);
+                        border-radius: 28px;
+                        max-width: 360px;
+                        width: 100%;
+                        padding: 36px 28px 32px;
+                        text-align: center;
+                        box-shadow: 0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
+                        animation: fuCardSlideUp 0.5s cubic-bezier(0.2,0.8,0.2,1) forwards;
+                    }
+                    #fu-icon-wrap {
+                        width: 82px; height: 82px;
+                        background: linear-gradient(135deg, #1f6e3f, #55d082);
+                        border-radius: 26px;
+                        display: flex; align-items: center; justify-content: center;
+                        margin: 0 auto 24px;
+                        font-size: 38px; color: #fff;
+                        box-shadow: 0 12px 35px rgba(85,208,130,0.4);
+                        animation: fuPulseGreen 2.4s ease-in-out infinite;
+                    }
+                    #fu-title {
+                        font-size: 22px; font-weight: 900;
+                        color: #ffffff; letter-spacing: -0.5px;
+                        margin-bottom: 8px;
+                    }
+                    #fu-badge {
+                        display: inline-flex; align-items: center; gap: 6px;
+                        background: rgba(85,208,130,0.12);
+                        border: 1px solid rgba(85,208,130,0.3);
+                        color: #55d082;
+                        font-size: 11px; font-weight: 700;
+                        letter-spacing: 1.5px; text-transform: uppercase;
+                        padding: 5px 12px; border-radius: 20px;
+                        margin-bottom: 18px;
+                    }
+                    #fu-desc {
+                        font-size: 14px; color: #94a3b8;
+                        line-height: 1.65; margin-bottom: 28px;
+                    }
+                    #fu-features {
+                        background: rgba(255,255,255,0.04);
+                        border: 1px solid rgba(255,255,255,0.07);
+                        border-radius: 16px;
+                        padding: 16px 18px;
+                        margin-bottom: 28px;
+                        text-align: left;
+                    }
+                    .fu-feature {
+                        display: flex; align-items: center; gap: 10px;
+                        font-size: 13px; color: #cbd5e1;
+                        padding: 6px 0;
+                        border-bottom: 1px solid rgba(255,255,255,0.05);
+                    }
+                    .fu-feature:last-child { border-bottom: none; padding-bottom: 0; }
+                    .fu-feature i { color: #55d082; font-size: 13px; width: 16px; text-align: center; }
+                    #fu-progress-wrap {
+                        display: none;
+                        flex-direction: column; align-items: center; gap: 10px;
+                        margin-bottom: 20px;
+                    }
+                    #fu-progress-track {
+                        width: 100%; height: 6px;
+                        background: rgba(255,255,255,0.08);
+                        border-radius: 10px; overflow: hidden;
+                    }
+                    #fu-progress-bar {
+                        height: 100%; width: 0%; border-radius: 10px;
+                        background: linear-gradient(90deg, #2c7a47, #55d082, #2c7a47);
+                        background-size: 200% auto;
+                        animation: fuBarShimmer 1.6s linear infinite;
+                        transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+                    }
+                    #fu-progress-label {
+                        font-size: 12px; color: rgba(255,255,255,0.4); font-weight: 500;
+                    }
+                    #fu-update-btn {
+                        width: 100%; padding: 16px;
+                        background: linear-gradient(270deg, #2c7a47, #005c4b, #1f6e3f);
+                        background-size: 400% 400%;
+                        color: #fff; border: none; border-radius: 18px;
+                        font-size: 16px; font-weight: 800; cursor: pointer;
+                        display: flex; align-items: center; justify-content: center; gap: 10px;
+                        box-shadow: 0 10px 28px rgba(44,122,71,0.4);
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;
+                        touch-action: manipulation;
+                        animation: colorShift 5s ease infinite;
+                    }
+                    #fu-update-btn:active { transform: scale(0.96); }
+                    #fu-update-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+                    #fu-footer-note {
+                        margin-top: 14px;
+                        font-size: 11px; color: rgba(255,255,255,0.2);
+                    }
+                </style>
+
+                <div id="fu-card">
+                    <div id="fu-icon-wrap">
+                        <i class="fas fa-rotate"></i>
+                    </div>
+
+                    <div id="fu-badge">
+                        <i class="fas fa-circle" style="font-size:7px;"></i>
+                        Update Available
+                    </div>
+
+                    <h2 id="fu-title">New Version Ready</h2>
+
+                    <p id="fu-desc">
+                        A critical update for <strong style="color:#e2e8f0;">Shwari | Finance</strong> has been downloaded and is ready to install. Please update now to continue.
+                    </p>
+
+                    <div id="fu-features">
+                        <div class="fu-feature">
+                            <i class="fas fa-shield-halved"></i>
+                            <span>Security patches applied</span>
+                        </div>
+                        <div class="fu-feature">
+                            <i class="fas fa-bolt"></i>
+                            <span>Performance improvements</span>
+                        </div>
+                        <div class="fu-feature">
+                            <i class="fas fa-bug-slash"></i>
+                            <span>Bug fixes &amp; stability updates</span>
+                        </div>
+                    </div>
+
+                    <div id="fu-progress-wrap">
+                        <div id="fu-progress-track">
+                            <div id="fu-progress-bar"></div>
+                        </div>
+                        <span id="fu-progress-label">Applying update…</span>
+                    </div>
+
+                    <button id="fu-update-btn">
+                        <i class="fas fa-rotate"></i>
+                        <span>Update Now</span>
+                    </button>
+
+                    <p id="fu-footer-note">Your data and settings will not be affected</p>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            const btn       = modal.querySelector('#fu-update-btn');
+            const progWrap  = modal.querySelector('#fu-progress-wrap');
+            const progBar   = modal.querySelector('#fu-progress-bar');
+            const progLabel = modal.querySelector('#fu-progress-label');
+
+            const steps = [
+                { pct: 20, label: 'Downloading update…'  },
+                { pct: 45, label: 'Verifying files…'      },
+                { pct: 70, label: 'Applying changes…'     },
+                { pct: 90, label: 'Almost done…'          },
+                { pct: 100, label: 'Complete!'            },
+            ];
+
+            // Block ESC key — user must update
+            const _escBlock = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); } };
+            document.addEventListener('keydown', _escBlock, true);
+            // Block backdrop click — clicking outside card does nothing
+            modal.addEventListener('click', (e) => { if (e.target === modal) e.stopPropagation(); });
+            // Hard-reload fallback: if user ignores the modal for 60 s, force the update silently
+            const _forceTimer = setTimeout(() => {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                }
+                setTimeout(() => window.location.reload(true), 500);
+            }, 60000);
+
+            btn.addEventListener('click', async () => {
+                clearTimeout(_forceTimer);
+                document.removeEventListener('keydown', _escBlock, true);
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Updating…</span>';
+                progWrap.style.display = 'flex';
+
+                // Animate progress bar through steps
+                let i = 0;
+                const runStep = () => {
+                    if (i >= steps.length) {
+                        setTimeout(() => window.location.reload(true), 400);
+                        return;
+                    }
+                    const s = steps[i++];
+                    progBar.style.width = s.pct + '%';
+                    progLabel.textContent = s.label;
+                    setTimeout(runStep, 350 + Math.random() * 250);
+                };
+                setTimeout(runStep, 200);
+
+                // Tell the waiting SW to take over immediately
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                }
+            });
+        }
+
+        // =========================================
+        // MAIN INITIALIZATION
+        // =========================================
+        window.waitingForMacroTransition = false;
+
+        // WARM UP URL INSTANTLY: Trigger iframe load the exact millisecond the script runs
+        MacroEngine.load();
+
+        // PRE-WARM OFFLINE CACHE: Aggressively save macro HTML to IDB on every online load.
+        // Ensures offline mode always has a fresh snapshot regardless of SW cache eviction.
+        async function _saveIframeToIDB() {
+            if (!navigator.onLine) return;
+            try {
+                // Wait for iframe to fully load, then extract its HTML
+                const frame = document.getElementById('macro-frame');
+                let html = null;
+
+                // Method 1: Try reading from already-loaded iframe (cross-origin safe attempt)
+                try {
+                    if (frame && frame.contentDocument && frame.contentDocument.documentElement) {
+                        html = frame.contentDocument.documentElement.outerHTML;
+                    }
+                } catch(e) { /* cross-origin — expected */ }
+
+                // Method 2: Fresh fetch (most reliable — always gets latest)
+                if (!html || html.length < 1000) {
+                    const res = await fetch(`${MACRO_URL}?cb=${Date.now()}&client=shwari_offline_save`);
+                    if (res.ok) html = await res.text();
+                }
+
+                if (!html || html.length < 1000) return;
+
+                const isReal = !html.toLowerCase().includes('accounts.google.com') &&
+                               !html.toLowerCase().includes('sign in') &&
+                               !html.toLowerCase().includes('error 404');
+
+                if (isReal) {
+                    await ShwariDB.save(html);
+                    console.log('[OfflineSave] Macro snapshot saved —', Math.round(html.length/1024), 'KB');
+
+                    // Also tell the SW to cache it via message bridge
+                    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({
+                            type: 'FORCE_MACRO_CACHE',
+                            html: html
+                        });
+                    }
+                }
+            } catch(e) {
+                console.log('[OfflineSave] Skipped —', e.message);
+            }
+        }
+
+        // Save immediately on load, and again every 10 minutes while online
+        if (navigator.onLine) {
+            setTimeout(_saveIframeToIDB, 4000);
+            setInterval(() => {
+                if (navigator.onLine) _saveIframeToIDB();
+            }, 10 * 60 * 1000);
+        }
+
+        // Also save after every successful macro load (most reliable trigger)
+        const _origOnMacroSuccess = window.onMacroSuccess;
+        window.onMacroSuccess = function() {
+            if (_origOnMacroSuccess) _origOnMacroSuccess.apply(this, arguments);
+            if (navigator.onLine) setTimeout(_saveIframeToIDB, 2000);
+        };
+
+        async function initializeApp() {
+            initSuperResponsiveButtons();
+            
+            const isDuplicate = await checkDuplicateApp();
+            if (isDuplicate) {
+                return;
+            }
+            
+            // Process permissions & service worker in the background 
+            // so they NEVER block the instant splash screen transition
+            requestStoragePermission();
+            registerServiceWorker();
+
+            const uiWrapper = document.getElementById('ui');
+            let isParallaxActive = true;
+            let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+            let rafId;
+
+            const onPointerMove = (e) => {
+                if (!isParallaxActive) return;
+                const cx = e.clientX ?? e.touches?.[0]?.clientX ?? window.innerWidth  / 2;
+                const cy = e.clientY ?? e.touches?.[0]?.clientY ?? window.innerHeight / 2;
+                targetX = Math.max(-8, Math.min(8, (window.innerWidth  / 2 - cx) / 35));
+                targetY = Math.max(-8, Math.min(8, (window.innerHeight / 2 - cy) / 35));
+            };
+
+            const lerp = (a, b, t) => a + (b - a) * t;
+
+            const tickParallax = () => {
+                if (!isParallaxActive) return;
+                currentX = lerp(currentX, targetX, 0.07);
+                currentY = lerp(currentY, targetY, 0.07);
+                if (Math.abs(currentX - targetX) > 0.005 || Math.abs(currentY - targetY) > 0.005) {
+                    uiWrapper.style.transform = `scale(1) rotateY(${currentX.toFixed(3)}deg) rotateX(${currentY.toFixed(3)}deg) translateZ(0)`;
+                }
+                rafId = requestAnimationFrame(tickParallax);
+            };
+
+            document.addEventListener('mousemove', onPointerMove, { passive: true });
+            document.addEventListener('touchmove', onPointerMove, { passive: true });
+
+            uiWrapper.classList.add('pop-in');
+            document.body.classList.add('intro-active');
+            tickParallax();
+            
+            window.initAuth();
+        }
+
+        window.splashTypingDone = false;
+        window.transitionStarted = false;
+
+        window.checkAndRunTransition = () => {
+            if (!window.transitionStarted) {
+                window.transitionStarted = true;
+                transitionLogic();
+            }
+        };
+
+        // Execute Splash sequence and warm up app immediately
+        function startSplashSequence() {
+    window.splashTypingDone = true;
+    initializeApp(); // warm up immediately
+    // Loader hides itself when macro fires onMacroSuccess
+}
+
+        startSplashSequence();
+
+        // =========================================
+        // EXISTING FUNCTIONS (ENHANCED)
+        // =========================================
+        const formatName = (str) => {
+            if (!str) return "";
+            return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        };
+
+        const isPWA = () => {
+            return window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone === true || 
+                   document.referrer.includes('android-app://');
+        };
+
+        window.initAuth = () => {
+            localStorage.setItem('shwari_registered', 'true');
+        };
+
+        const validateEmail = (email) => {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        };
+
+        const validateName = (name) => {
+            return name.trim().length >= 2;
+        };
+
+        const showFieldError = (fieldId, errorId, show) => {
+            const field = document.getElementById(fieldId);
+            const error = document.getElementById(errorId);
+            if (show) {
+                field.classList.add('error');
+                field.classList.remove('success');
+                error.classList.add('show');
+            } else {
+                field.classList.remove('error');
+                field.classList.add('success');
+                error.classList.remove('show');
+            }
+        };
+
+        const clearFieldErrors = () => {
+            document.getElementById('reg-name').classList.remove('error', 'success');
+            document.getElementById('reg-email').classList.remove('error', 'success');
+            document.getElementById('name-error').classList.remove('show');
+            document.getElementById('email-error').classList.remove('show');
+        };
+
+        document.getElementById('reg-name').addEventListener('blur', function() {
+            const name = this.value.trim();
+            if (name.length > 0) {
+                showFieldError('reg-name', 'name-error', !validateName(name));
+            }
+        });
+
+        document.getElementById('reg-name').addEventListener('input', function() {
+            if (this.classList.contains('error')) {
+                showFieldError('reg-name', 'name-error', !validateName(this.value.trim()));
+            }
+        });
+
+        document.getElementById('reg-email').addEventListener('blur', function() {
+            const email = this.value.trim();
+            if (email.length > 0) {
+                showFieldError('reg-email', 'email-error', !validateEmail(email));
+            }
+        });
+
+        document.getElementById('reg-email').addEventListener('input', function() {
+            if (this.classList.contains('error')) {
+                showFieldError('reg-email', 'email-error', !validateEmail(this.value.trim()));
+            }
+        });
+
+        document.getElementById('activate-btn').addEventListener('click', function() {
+            const nameInput = document.getElementById('reg-name');
+            const emailInput = document.getElementById('reg-email');
+            const name = nameInput.value.trim();
+            const email = emailInput.value.trim().toLowerCase();
+            
+            let isValid = true;
+            
+            if (!validateName(name)) {
+                showFieldError('reg-name', 'name-error', true);
+                isValid = false;
+            } else {
+                showFieldError('reg-name', 'name-error', false);
+            }
+            
+            if (!validateEmail(email)) {
+                showFieldError('reg-email', 'email-error', true);
+                isValid = false;
+            } else {
+                showFieldError('reg-email', 'email-error', false);
+            }
+            
+            if (!isValid) {
+                const btn = document.getElementById('activate-btn');
+                btn.style.animation = 'shakeError 0.4s ease';
+                setTimeout(() => { btn.style.animation = ''; }, 400);
+                return;
+            }
+            
+            clearFieldErrors();
+            
+            localStorage.setItem('emp_name', name);
+            localStorage.setItem('emp_email', email);
+            localStorage.setItem('shwari_registered', 'true');
+            const authPortal = document.getElementById('auth-portal');
+            const regScreen = document.getElementById('reg-screen');
+            
+            // Re-show the splash screen to serve as a bridge to the macro
+            const bgLayer = document.querySelector('.bg-layer');
+            if(bgLayer) {
+                bgLayer.style.display = 'flex';
+                void bgLayer.offsetWidth; // Trigger reflow
+                bgLayer.classList.remove('fade-out');
+            }
+
+            regScreen.style.transform = 'scale(0.9)';
+            regScreen.style.opacity = '0';
+            setTimeout(() => {
+                authPortal.style.opacity = '0';
+                setTimeout(() => {
+                    authPortal.classList.add('hidden');
+                    regScreen.classList.add('hidden');
+                    
+                    // App is now loading in background, transition smoothly
+                    window.splashTypingDone = true;
+                    if (window.checkAndRunTransition) window.checkAndRunTransition();
+                    
+                }, 500);
+            }, 400);
+        });
+
+        window.handleContinue = () => {
+            const continueOverlay = document.getElementById('continue-overlay');
+            continueOverlay.style.opacity = '0';
+            setTimeout(() => { 
+                continueOverlay.style.display = 'none'; 
+                executeTransition();
+            }, 600);
+        };
+
+        const transitionLogic = () => {
+            const uiWrapper = document.getElementById('ui');
+            const appPanel  = document.getElementById('app');
+            const loader    = document.getElementById('ig-loader');
+
+            if (uiWrapper) uiWrapper.classList.add('pull-active');
+            document.body.classList.remove('intro-active');
+
+            // Reveal app immediately
+            appPanel.classList.add('active');
+
+            // Fade out Instagram loader
+            if (loader) {
+                loader.classList.add('hidden');
+                setTimeout(() => loader.classList.add('gone'), 480);
+            }
+
+            // Reset theme-color meta (skip if payment ad is visible)
+            if (!window._adVisible) {
+                document.querySelectorAll('meta[name="theme-color"]').forEach(m =>
+                    m.setAttribute('content', '#111827')
+                );
+            }
+
+            setTimeout(() => {
+                if (uiWrapper && uiWrapper.parentNode) uiWrapper.parentNode.removeChild(uiWrapper);
+            }, 600);
+        };
+        
+        const executeTransition = () => {
+            if (MacroEngine.loaded) transitionLogic();
+        };
+
+        // Hook for stable engine success
+        window.onMacroSuccess = () => {
+            setTimeout(() => {
+                if (window.checkAndRunTransition) {
+                    window.checkAndRunTransition();
+                }
+            }, 4000);
+        };
+
+        /* =====================================================
+           NETWORK CONNECTIVITY DETECTION & ERROR HANDLING
+           ====================================================== */
+        
+        const networkToast = document.getElementById('network-toast');
+        const toastMessage = document.getElementById('toast-message');
+        let wasOffline = false;
+        let isCheckingConnection = false;
+        let autoReloadTimer = null;
+
+        const showToast = (message, isOnline) => {
+            toastMessage.textContent = message;
+            networkToast.className = isOnline ? 'online' : 'offline';
+            networkToast.classList.add('show');
+            
+            setTimeout(() => {
+                networkToast.classList.remove('show');
+            }, 3000);
+        };
+
+        const checkConnectivity = async () => {
+            if (isCheckingConnection) return navigator.onLine;
+            isCheckingConnection = true;
+
+            const probes = [
+                'https://www.google.com/favicon.ico',
+                'https://www.cloudflare.com/cdn-cgi/trace',
+                'https://httpbin.org/get',
+            ];
+
+            for (const url of probes) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 4000);
+                    await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    isCheckingConnection = false;
+                    return true;
+                } catch (_) { /* try next probe */ }
+            }
+
+            isCheckingConnection = false;
+            return false;
+        };
+
+        const handleOnline = async () => {
+            const isConnected = await checkConnectivity();
+            if (!isConnected) return; // Lie-fi guard — browser says online but can't reach internet
+
+            if (!wasOffline) {
+                // Not coming back from offline — just do a silent background sync
+                if (MacroEngine.loaded && !MacroEngine.isOfflineView) {
+                    MacroEngine.silentSync();
+                }
+                return;
+            }
+
+            // ── COMING BACK FROM OFFLINE ──────────────────────────────────
+            wasOffline = false;
+            if (autoReloadTimer) { clearInterval(autoReloadTimer); autoReloadTimer = null; }
+
+            showToast('Back online!', true);
+            console.log('[Network] Restored — triggering macro reload');
+
+            const banner = document.getElementById('offline-macro-banner');
+
+            if (MacroEngine.isOfflineView || !MacroEngine.loaded) {
+                // Show "Reconnecting…" banner immediately so user sees feedback
+                if (banner) {
+                    banner.innerHTML = '<i class="fas fa-spinner fa-spin" style="animation:fa-spin 0.8s linear infinite"></i><span>Reconnecting…</span>';
+                    banner.style.background = 'rgba(44, 122, 71, 0.95)';
+                    banner.style.boxShadow = '0 8px 25px rgba(44, 122, 71, 0.4)';
+                    banner.classList.add('show');
+                }
+
+                // Short delay lets the UI settle before hitting the network
+                setTimeout(() => {
+                    MacroEngine.retries = 0;
+                    MacroEngine.loaded  = false;
+                    MacroEngine.load();
+                }, 600);
+            } else {
+                // Macro already showing live — just sync data silently
+                if (banner) banner.classList.remove('show');
+                MacroEngine.silentSync();
+            }
+        };
+
+        const handleOffline = () => {
+            if (wasOffline) return; // Already handling offline state
+            wasOffline = true;
+            showToast('Connection lost', false);
+            console.log('[Network] Went offline');
+
+            // Show the offline banner inside the app immediately if visible
+            const banner = document.getElementById('offline-macro-banner');
+            if (banner && document.getElementById('app').classList.contains('active')) {
+                banner.innerHTML = '<div class="offline-pulse"></div><span>Offline Mode</span>';
+                banner.style.background = 'rgba(231, 76, 60, 0.95)';
+                banner.style.boxShadow = '0 8px 25px rgba(231, 76, 60, 0.4)';
+                banner.classList.add('show');
+            }
+
+            // Poll every 3 s for actual connectivity (not just navigator.onLine)
+            if (!autoReloadTimer) {
+                autoReloadTimer = setInterval(async () => {
+                    if (navigator.onLine) {
+                        const isConnected = await checkConnectivity();
+                        if (isConnected) {
+                            clearInterval(autoReloadTimer);
+                            autoReloadTimer = null;
+                            handleOnline();
+                        }
+                    }
+                }, 3000);
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        // Heartbeat: only runs probe when browser already thinks we're offline,
+        // preventing unnecessary fetches every 5 s when everything is fine.
+        setInterval(async () => {
+            if (!navigator.onLine && !autoReloadTimer) {
+                handleOffline(); // Catches cases where the 'offline' event was missed
+            }
+        }, 5000);
+
+        window.addEventListener('load', async () => {
+            if (!navigator.onLine) {
+                handleOffline();
+                return;
+            }
+            // Check actual reachability, not just the OS flag
+            const isConnected = await checkConnectivity();
+            if (!isConnected) {
+                handleOffline();
+            } else if (MacroEngine.loaded && !MacroEngine.isOfflineView) {
+                // We're online and showing live content — do a fresh silent sync
+                MacroEngine.silentSync();
+            }
+        });
+
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState !== 'visible') return;
+
+            if (!navigator.onLine) {
+                handleOffline();
+                return;
+            }
+
+            const isConnected = await checkConnectivity();
+
+            if (!isConnected) {
+                handleOffline();
+            } else if (wasOffline) {
+                // Came back to the tab AND we were offline before — reconnect fully
+                handleOnline();
+            } else if (MacroEngine.loaded && !MacroEngine.isOfflineView) {
+                // Normal foreground — silently sync data in the background
+                MacroEngine.silentSync();
+            }
+        });
+
+        /* =====================================================
+           INSTALL PROGRESS SCREEN
+           ====================================================== */
+
+        const installScreen  = document.getElementById('install-progress-screen');
+        const installBar     = document.getElementById('install-bar');
+        const installStatus  = document.getElementById('install-status-text');
+        const installTick    = document.getElementById('install-tick');
+        const tickRipple1    = document.getElementById('tick-ripple-1');
+        const tickRipple2    = document.getElementById('tick-ripple-2');
+
+        const installSteps = [
+            { pct: 12, label: 'Downloading resources…'  },
+            { pct: 28, label: 'Verifying packages…'      },
+            { pct: 45, label: 'Configuring app data…'    },
+            { pct: 62, label: 'Securing your device…'    },
+            { pct: 80, label: 'Optimising performance…'  },
+            { pct: 95, label: 'Almost there…'            },
+            { pct: 100, label: 'Done!'                   },
+        ];
+
+        function runInstallAnimation(onComplete) {
+            installScreen.classList.add('active');
+
+            let step = 0;
+
+            function nextStep() {
+                if (step >= installSteps.length) return;
+                const s = installSteps[step++];
+                installBar.style.width = s.pct + '%';
+                installStatus.style.opacity = '0';
+                setTimeout(() => {
+                    installStatus.textContent = s.label;
+                    installStatus.style.opacity = '1';
+                }, 200);
+
+                if (s.pct < 100) {
+                    const delay = 350 + Math.random() * 300;
+                    setTimeout(nextStep, delay);
+                } else {
+                    setTimeout(() => {
+                        installTick.classList.add('show');
+                        tickRipple1.classList.add('animate');
+                        setTimeout(() => { tickRipple2.classList.add('animate'); }, 300);
+
+                        setTimeout(() => {
+                            installScreen.classList.add('fade-out');
+                            setTimeout(() => {
+                                installScreen.style.display = 'none';
+                                if (typeof onComplete === 'function') onComplete();
+                            }, 800);
+                        }, 1800);
+                    }, 400);
+                }
+            }
+
+            setTimeout(nextStep, 300);
+        }
+
+        /* ---- Patch the install flow ---- */
+        let deferredPrompt;
+        const installOverlay = document.getElementById('forcedInstall');
+        const installBtn     = document.getElementById('installAction');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!isPWA()) installOverlay.style.display = 'flex';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installOverlay.style.opacity = '0';
+                    installOverlay.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => {
+                        installOverlay.style.display = 'none';
+                        runInstallAnimation(() => {
+                            window.initAuth();
+                        });
+                    }, 500);
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            if (!installScreen.classList.contains('active')) {
+                if (installOverlay.style.display !== 'none') {
+                    installOverlay.style.opacity = '0';
+                    installOverlay.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => {
+                        installOverlay.style.display = 'none';
+                        runInstallAnimation(() => { window.initAuth(); });
+                    }, 500);
+                }
+            }
+        });
+
+        /* =====================================================
+           NEW FEATURES: DUPLICATE BLOCKER & POST-INSTALL GUIDE
+           ====================================================== */
+        
+        async function checkIfAppAlreadyInstalled() {
+            if ('getInstalledRelatedApps' in navigator) {
+                try {
+                    const relatedApps = await navigator.getInstalledRelatedApps();
+                    const shwariInstalled = relatedApps.some(app => 
+                        app.id === 'shwari-finance' || 
+                        app.url?.includes('shwari') ||
+                        app.scope?.includes('shwari')
+                    );
+                    
+                    if (shwariInstalled) {
+                        showAlreadyInstalledBlocker();
+                        return true;
+                    }
+                } catch (e) {
+                    console.log('getInstalledRelatedApps check failed:', e);
+                }
+            }
+            
+            const isInstalled = localStorage.getItem('shwari_app_installed') === 'true';
+            const hasInstance = localStorage.getItem('shwari_instance_id');
+            
+            if (isInstalled && hasInstance && hasInstance !== APP_INSTANCE_ID) {
+                showAlreadyInstalledBlocker();
+                return true;
+            }
+            
+            return false;
+        }
+
+        function showAlreadyInstalledBlocker() { /* disabled – always allow */ }
+
+        function showPostInstallGuide() {
+            const guide = document.getElementById('post-install-guide');
+            guide.style.display = 'flex';
+            void guide.offsetWidth;
+            guide.classList.add('active');
+            
+            localStorage.setItem('shwari_app_installed', 'true');
+        }
+
+        const originalInitAuth = window.initAuth;
+        window.initAuth = function() {
+            if (localStorage.getItem('shwari_show_guide') === 'true') {
+                showPostInstallGuide();
+                return;
+            }
+            return originalInitAuth.apply(this, arguments);
+        };
+
+        document.getElementById('open-shwari-btn').addEventListener('click', function() {
+            alert('Please close this browser tab and launch Shwari | Finance from the green elephant icon on your home screen.');
+            window.close();
+        });
+
+        document.getElementById('close-browser-btn').addEventListener('click', function() {
+            const guide = document.getElementById('post-install-guide');
+            guide.classList.add('fade-out');
+            guide.classList.remove('active');
+            setTimeout(() => {
+                guide.style.display = 'none';
+                localStorage.removeItem('shwari_show_guide');
+                originalInitAuth();
+            }, 800);
+        });
+
+        window.addEventListener('appinstalled', () => {
+            localStorage.setItem('shwari_app_installed', 'true');
+            localStorage.setItem('shwari_show_guide', 'true');
+        });
+
+        const originalRunInstallAnimation = runInstallAnimation;
+        runInstallAnimation = function(onComplete) {
+            const wrappedCallback = function() {
+                localStorage.setItem('shwari_app_installed', 'true');
+                localStorage.setItem('shwari_show_guide', 'true');
+                if (onComplete) onComplete();
+            };
+            return originalRunInstallAnimation(wrappedCallback);
+        };
+
+        checkIfAppAlreadyInstalled();
+
+        // =========================================
+        // NOTIFICATION BAR TOUCH DISMISS
+        // =========================================
+        const toastEl = document.getElementById('network-toast');
+        toastEl.style.cursor = 'pointer';
+        toastEl.addEventListener('click', () => toastEl.classList.remove('show'));
+        toastEl.addEventListener('touchstart', (e) => {
+            toastEl.classList.remove('show');
+        }, { passive: true });
+
+    })();
+    </script>
+    
+    <script>
+        /**
+         * ============================================================
+         *  Shwari | Finance — PWA Logic & Security Gateway
+         *  Version: 2.0.0
+         *  Upgraded for: Offline Support, Instant Memory, Session
+         *  Security, Audit Logging, Retry Logic & Network Resilience
+         * ============================================================
+         */
+
+        "use strict"; // Enforce strict mode to catch silent errors
+
+        // ─────────────────────────────────────────────────────────────
+        //  CONSTANTS & CONFIGURATION
+        // ─────────────────────────────────────────────────────────────
+
+        const APP_MACRO_URL = "https://script.google.com/macros/s/AKfycbz2ns6LkPboQ0HxsHqITIAqLZEP9Ju7b4FtGLaDHkxpGOCMyWV9mQNTOsyAFVnSzK8O/exec";
+
+        const CONFIG = {
+          APP_NAME: "Shwari | Finance",
+          STORAGE_PREFIX: "shwari_",       // Namespace all storage keys
+          SESSION_TTL_MS: 8 * 60 * 60 * 1000, // 8-hour session expiry
+          MAX_LOGIN_ATTEMPTS: 5,           // Lockout after 5 failed continues
+          LOCKOUT_DURATION_MS: 15 * 60 * 1000, // 15-minute lockout window
+          IFRAME_TIMEOUT_MS: 12000,        // 12 seconds before iframe timeout warning
+          MAX_RETRY_ATTEMPTS: 3,           // Retries for iframe/macro load
+          RETRY_DELAY_BASE_MS: 1500,       // Base delay for exponential backoff
+          FADE_DURATION_MS: 500,           // Auth portal fade animation duration
+          AUDIT_LOG_MAX_ENTRIES: 50,       // Cap audit log size on device
+          VERSION: "2.0.0",
+        };
+
+        // Namespaced storage keys — all in one place for easy maintenance
+        const KEYS = {
+          REGISTERED:     CONFIG.STORAGE_PREFIX + "registered",
+          EMP_NAME:       CONFIG.STORAGE_PREFIX + "emp_name",
+          EMP_EMAIL:      CONFIG.STORAGE_PREFIX + "emp_email",
+          SESSION_TOKEN:   CONFIG.STORAGE_PREFIX + "session_token",
+          SESSION_EXPIRY:  CONFIG.STORAGE_PREFIX + "session_expiry",
+          LOGIN_ATTEMPTS:  CONFIG.STORAGE_PREFIX + "login_attempts",
+          LOCKOUT_UNTIL:   CONFIG.STORAGE_PREFIX + "lockout_until",
+          LAST_SEEN:       CONFIG.STORAGE_PREFIX + "last_seen",
+          AUDIT_LOG:       CONFIG.STORAGE_PREFIX + "audit_log",
+          INSTALL_PROMPT:  CONFIG.STORAGE_PREFIX + "install_prompt_seen",
+          DEVICE_ID:       CONFIG.STORAGE_PREFIX + "device_id",
+          THEME:           CONFIG.STORAGE_PREFIX + "theme",
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  1. UTILITY — FORMAT NAME
+        //  Converts any casing to Title Case (e.g. "emilio thuku" → "Emilio Thuku")
+        // ─────────────────────────────────────────────────────────────
+
+        const formatNameGateway = (str) => {
+          if (!str || typeof str !== "string") return "";
+          return str
+            .toLowerCase()
+            .trim()
+            .split(/\s+/) // Handle multiple consecutive spaces
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  2. UTILITY — EMAIL VALIDATION
+        //  Rejects clearly malformed emails before saving to storage
+        // ─────────────────────────────────────────────────────────────
+
+        const isValidEmailGateway = (email) => {
+          if (!email || typeof email !== "string") return false;
+          // RFC-5322 simplified pattern — catches common mistakes
+          const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+          return pattern.test(email.trim().toLowerCase());
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  3. UTILITY — SAFE LOCAL STORAGE WRAPPER
+        //  Guards against QuotaExceededError and private-mode failures
+        // ─────────────────────────────────────────────────────────────
+
+        const Store = {
+          get(key) {
+            try {
+              return localStorage.getItem(key);
+            } catch (err) {
+              console.warn(`[Shwari] Store.get failed for "${key}":`, err.message);
+              return null;
+            }
+          },
+          set(key, value) {
+            try {
+              localStorage.setItem(key, value);
+              return true;
+            } catch (err) {
+              console.error(`[Shwari] Store.set failed for "${key}":`, err.message);
+              return false;
+            }
+          },
+          remove(key) {
+            try {
+              localStorage.removeItem(key);
+              return true;
+            } catch (err) {
+              console.warn(`[Shwari] Store.remove failed for "${key}":`, err.message);
+              return false;
+            }
+          },
+          clear() {
+            try {
+              // Only clear keys belonging to this app (safe for shared storage environments)
+              const prefix = CONFIG.STORAGE_PREFIX;
+              Object.keys(localStorage)
+                .filter((k) => k.startsWith(prefix))
+                .forEach((k) => localStorage.removeItem(k));
+              return true;
+            } catch (err) {
+              console.error("[Shwari] Store.clear failed:", err.message);
+              return false;
+            }
+          },
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  4. DEVICE FINGERPRINTING — Persistent Anonymous Device ID
+        //  Generates a stable UUID per device; used for audit logs
+        // ─────────────────────────────────────────────────────────────
+
+        const getDeviceId = () => {
+          let id = Store.get(KEYS.DEVICE_ID);
+          if (!id) {
+            // Generate a UUID v4-style random string
+            id = "dev-" + ([1e7] + -1e3 + -4e3 + -8e3 + -1e11)
+              .replace(/[018]/g, (c) =>
+                (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
+              );
+            Store.set(KEYS.DEVICE_ID, id);
+          }
+          return id;
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  5. AUDIT LOGGING — Tamper-evident On-Device Event Journal
+        //  Stores up to CONFIG.AUDIT_LOG_MAX_ENTRIES events locally
+        // ─────────────────────────────────────────────────────────────
+
+        const AuditLog = {
+          /**
+           * Appends a new event to the on-device audit trail.
+           * @param {string} event - Short event identifier (e.g. "LOGIN_SUCCESS")
+           * @param {Object} [meta={}] - Optional extra metadata
+           */
+          record(event, meta = {}) {
+            try {
+              const existing = JSON.parse(Store.get(KEYS.AUDIT_LOG) || "[]");
+              const entry = {
+                ts: new Date().toISOString(),       // ISO timestamp for portability
+                event,                              // Event label
+                device: getDeviceId(),              // Device fingerprint
+                online: navigator.onLine,           // Connectivity at time of event
+                ...meta,                            // Any additional context
+              };
+              // Prepend newest entry; trim to cap
+              const updated = [entry, ...existing].slice(0, CONFIG.AUDIT_LOG_MAX_ENTRIES);
+              Store.set(KEYS.AUDIT_LOG, JSON.stringify(updated));
+            } catch (err) {
+              console.warn("[Shwari] AuditLog.record failed:", err.message);
+            }
+          },
+
+          /**
+           * Returns the full audit log array (newest first).
+           * @returns {Array}
+           */
+          read() {
+            try {
+              return JSON.parse(Store.get(KEYS.AUDIT_LOG) || "[]");
+            } catch {
+              return [];
+            }
+          },
+
+          /**
+           * Wipes the audit log. Called on full device reset.
+           */
+          clear() {
+            Store.remove(KEYS.AUDIT_LOG);
+          },
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  6. SESSION MANAGEMENT — Cryptographic Token & Expiry
+        //  Short-lived session tokens prevent stale logins persisting
+        // ─────────────────────────────────────────────────────────────
+
+        const Session = {
+          /**
+           * Creates a new session token and saves it with an expiry timestamp.
+           * Called after a successful "Continue" action.
+           */
+          create() {
+            const token = "sess-" + crypto
+              .getRandomValues(new Uint32Array(4))
+              .join("-");
+            const expiry = Date.now() + CONFIG.SESSION_TTL_MS;
+            Store.set(KEYS.SESSION_TOKEN, token);
+            Store.set(KEYS.SESSION_EXPIRY, String(expiry));
+            Store.set(KEYS.LAST_SEEN, new Date().toISOString());
+            AuditLog.record("SESSION_CREATED", { token_prefix: token.slice(0, 12) });
+            return token;
+          },
+
+          /**
+           * Returns true if a valid, unexpired session token exists.
+           * @returns {boolean}
+           */
+          isValid() {
+            const token = Store.get(KEYS.SESSION_TOKEN);
+            const expiry = parseInt(Store.get(KEYS.SESSION_EXPIRY) || "0", 10);
+            if (!token || !expiry) return false;
+            if (Date.now() > expiry) {
+              this.destroy("EXPIRED");
+              return false;
+            }
+            return true;
+          },
+
+          /**
+           * Destroys the current session (logout or expiry).
+           * @param {string} [reason="MANUAL"] - Reason code for audit log
+           */
+          destroy(reason = "MANUAL") {
+            AuditLog.record("SESSION_DESTROYED", { reason });
+            Store.remove(KEYS.SESSION_TOKEN);
+            Store.remove(KEYS.SESSION_EXPIRY);
+          },
+
+          /**
+           * Returns a human-readable time-remaining string for the session.
+           * @returns {string}
+           */
+          timeRemaining() {
+            const expiry = parseInt(Store.get(KEYS.SESSION_EXPIRY) || "0", 10);
+            const diff = expiry - Date.now();
+            if (diff <= 0) return "Expired";
+            const hours   = Math.floor(diff / 3_600_000);
+            const minutes = Math.floor((diff % 3_600_000) / 60_000);
+            return `${hours}h ${minutes}m`;
+          },
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  7. BRUTE-FORCE PROTECTION — Login Attempt Tracking
+        //  Locks out the app after too many rapid "Continue" presses
+        // ─────────────────────────────────────────────────────────────
+
+        const BruteGuard = {
+          /**
+           * Returns true if the device is currently locked out.
+           * @returns {boolean}
+           */
+          isLockedOut() {
+            const lockUntil = parseInt(Store.get(KEYS.LOCKOUT_UNTIL) || "0", 10);
+            if (Date.now() < lockUntil) return true;
+            if (lockUntil > 0) {
+              // Lockout expired — reset counters automatically
+              Store.remove(KEYS.LOCKOUT_UNTIL);
+              Store.set(KEYS.LOGIN_ATTEMPTS, "0");
+            }
+            return false;
+          },
+
+          /**
+           * Returns the remaining lockout duration in minutes (rounded up).
+           * @returns {number}
+           */
+          lockoutMinutesRemaining() {
+            const lockUntil = parseInt(Store.get(KEYS.LOCKOUT_UNTIL) || "0", 10);
+            return Math.ceil((lockUntil - Date.now()) / 60_000);
+          },
+
+          /**
+           * Increments the failed attempt counter; applies lockout if threshold hit.
+           */
+          recordFailedAttempt() {
+            const attempts = parseInt(Store.get(KEYS.LOGIN_ATTEMPTS) || "0", 10) + 1;
+            Store.set(KEYS.LOGIN_ATTEMPTS, String(attempts));
+            AuditLog.record("FAILED_CONTINUE_ATTEMPT", { attempt: attempts });
+            if (attempts >= CONFIG.MAX_LOGIN_ATTEMPTS) {
+              const lockUntil = Date.now() + CONFIG.LOCKOUT_DURATION_MS;
+              Store.set(KEYS.LOCKOUT_UNTIL, String(lockUntil));
+              AuditLog.record("DEVICE_LOCKED_OUT", { until: new Date(lockUntil).toISOString() });
+            }
+          },
+
+          /**
+           * Clears attempt counter on successful continuation.
+           */
+          resetAttempts() {
+            Store.remove(KEYS.LOGIN_ATTEMPTS);
+            Store.remove(KEYS.LOCKOUT_UNTIL);
+          },
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  8. PWA DETECTION — Standalone Mode Enforcement
+        //  Ensures the app only runs when properly installed as a PWA
+        // ─────────────────────────────────────────────────────────────
+
+        const isPWAGateway = () => {
+          return (
+            window.matchMedia("(display-mode: standalone)").matches ||
+            window.navigator.standalone === true || // iOS Safari standalone
+            document.referrer.includes("android-app://") // TWA (Trusted Web Activity)
+          );
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  9. NETWORK RESILIENCE — Retry with Exponential Backoff
+        //  Used to reload the macro iframe if initial load fails
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * Waits for a given number of milliseconds.
+         * @param {number} ms
+         * @returns {Promise<void>}
+         */
+        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+        /**
+         * Retries a function up to maxAttempts times with exponential backoff.
+         * @param {Function} fn         - Async function to retry
+         * @param {number} maxAttempts  - Maximum number of attempts
+         * @param {number} baseDelayMs  - Initial delay in ms (doubles each retry)
+         * @returns {Promise<any>}
+         */
+        const retryWithBackoff = async (fn, maxAttempts = CONFIG.MAX_RETRY_ATTEMPTS, baseDelayMs = CONFIG.RETRY_DELAY_BASE_MS) => {
+          let lastError;
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+              return await fn(attempt);
+            } catch (err) {
+              lastError = err;
+              console.warn(`[Shwari] Retry attempt ${attempt}/${maxAttempts} failed:`, err.message);
+              if (attempt < maxAttempts) {
+                const delay = baseDelayMs * Math.pow(2, attempt - 1); // 1.5s, 3s, 6s…
+                await sleep(delay);
+              }
+            }
+          }
+          throw lastError; // All attempts exhausted
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  10. UI HELPERS — Centralized DOM Manipulation
+        //  Keeps all direct DOM access in one safe, readable place
+        // ─────────────────────────────────────────────────────────────
+
+        const UI = {
+          /**
+           * Returns a DOM element by ID. Throws clearly if missing.
+           * @param {string} id
+           * @returns {HTMLElement}
+           */
+          get(id) {
+            const el = document.getElementById(id);
+            if (!el) {
+              console.error(`[Shwari] UI.get: Element "#${id}" not found in DOM.`);
+            }
+            return el;
+          },
+
+          /**
+           * Shows an element by removing 'hidden' class.
+           * @param {string} id
+           */
+          show(id) {
+            const el = this.get(id);
+            if (el) el.classList.remove("hidden");
+          },
+
+          /**
+           * Hides an element by adding 'hidden' class.
+           * @param {string} id
+           */
+          hide(id) {
+            const el = this.get(id);
+            if (el) el.classList.add("hidden");
+          },
+
+          /**
+           * Sets the innerText of an element safely.
+           * @param {string} id
+           * @param {string} text
+           */
+          setText(id, text) {
+            const el = this.get(id);
+            if (el) el.innerText = text;
+          },
+
+          /**
+           * Fades out an element over the configured duration, then hides it.
+           * @param {string} id
+           */
+          fadeOut(id) {
+            const el = this.get(id);
+            if (!el) return;
+            el.style.transition = `opacity ${CONFIG.FADE_DURATION_MS}ms ease`;
+            el.style.opacity = "0";
+            setTimeout(() => {
+              el.style.display = "none";
+              AuditLog.record("UI_FADE_COMPLETE", { element: id });
+            }, CONFIG.FADE_DURATION_MS);
+          },
+
+          /**
+           * Displays a non-blocking toast notification if the host page supports it.
+           * Falls back gracefully to console.warn if no toast container exists.
+           * @param {string} message
+           * @param {"info"|"success"|"warning"|"error"} type
+           */
+          toast(message, type = "info") {
+            console.log(`[Shwari Toast][${type.toUpperCase()}] ${message}`);
+            const toastContainer = document.getElementById("toast-container");
+            if (!toastContainer) return; // Graceful fallback — host page may not have toasts
+            const toast = document.createElement("div");
+            toast.className = `shwari-toast shwari-toast--${type}`;
+            toast.setAttribute("role", "alert"); // Accessibility: announce to screen readers
+            toast.setAttribute("aria-live", "polite");
+            toast.innerText = message;
+            toastContainer.appendChild(toast);
+            // Auto-dismiss after 4 seconds
+            setTimeout(() => {
+              toast.style.opacity = "0";
+              setTimeout(() => toast.remove(), 400);
+            }, 4000);
+          },
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  11. INITIALIZE AUTHENTICATION — Lightning Fast Memory Check
+        //  Entry point called from HTML on DOMContentLoaded
+        // ─────────────────────────────────────────────────────────────
+
+        window.initAuth = () => {
+          Store.set(KEYS.REGISTERED, "true");
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  12. HANDLE REGISTRATION — Save Identity to Device
+        //  Called when the user submits the registration form
+        // ─────────────────────────────────────────────────────────────
+
+        window.handleRegister = () => {
+          const nameInput  = UI.get("reg-name");
+          const emailInput = UI.get("reg-email");
+
+          if (!nameInput || !emailInput) {
+            UI.toast("Registration form elements are missing.", "error");
+            AuditLog.record("REG_FORM_ELEMENTS_MISSING");
+            return;
+          }
+
+          const name  = nameInput.value.trim();
+          const email = emailInput.value.trim().toLowerCase();
+
+          // ── Input Validation ──────────────────────────────────────
+          if (!name) {
+            UI.toast("Please enter your full name.", "warning");
+            nameInput.focus();
+            return;
+          }
+
+          if (!isValidEmailGateway(email)) {
+            UI.toast("Please enter a valid work email address.", "warning");
+            emailInput.focus();
+            AuditLog.record("REG_INVALID_EMAIL", { email });
+            return;
+          }
+
+          // ── Persist Identity to Device Storage ───────────────────
+          const savedName  = Store.set(KEYS.EMP_NAME,    name);
+          const savedEmail = Store.set(KEYS.EMP_EMAIL,   email);
+          const savedFlag  = Store.set(KEYS.REGISTERED,  "true");
+
+          if (!savedName || !savedEmail || !savedFlag) {
+            // Storage may be full or blocked (private/incognito mode)
+            UI.toast(
+              "Unable to save your registration. Check if storage is available.",
+              "error"
+            );
+            AuditLog.record("REG_STORAGE_FAILED", { name, email });
+            return;
+          }
+
+          AuditLog.record("USER_REGISTERED", { email, device: getDeviceId() });
+          UI.toast("Registration successful! Logging you in…", "success");
+
+          // Brief pause for toast visibility before reload
+          setTimeout(() => location.reload(), 800);
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  13. HANDLE CONTINUE — Launch Dashboard with Resilience
+        //  Called when the returning user taps "Continue"
+        // ─────────────────────────────────────────────────────────────
+
+        window.handleContinue = async () => {
+          // ── Brute-Force Lockout Check ─────────────────────────────
+          if (BruteGuard.isLockedOut()) {
+            const mins = BruteGuard.lockoutMinutesRemaining();
+            UI.toast(
+              `Too many attempts. Please wait ${mins} minute(s) before trying again.`,
+              "error"
+            );
+            AuditLog.record("CONTINUE_BLOCKED_LOCKOUT", { minutes_remaining: mins });
+            return;
+          }
+
+          // ── Offline Guard ─────────────────────────────────────────
+          if (!navigator.onLine) {
+            BruteGuard.recordFailedAttempt(); // Count offline attempts too
+            UI.toast(
+              "You are offline. Please connect to the internet to access the dashboard.",
+              "warning"
+            );
+            AuditLog.record("CONTINUE_BLOCKED_OFFLINE");
+            return;
+          }
+
+          // ── Create Session Token ──────────────────────────────────
+          const token = Session.create();
+          AuditLog.record("CONTINUE_STARTED", { session_prefix: token.slice(0, 12) });
+
+          // ── Reset Brute-Force Counter on Valid Continue ───────────
+          BruteGuard.resetAttempts();
+
+          // ── Fade Out Auth Portal Smoothly ────────────────────────
+          UI.fadeOut("auth-portal");
+
+          // ── Inject Macro Iframe with Cache-Busting Param ─────────
+          const iframe = UI.get("macro-frame");
+          if (iframe) {
+            const macroURL = `${APP_MACRO_URL}?cb=${Date.now()}&device=${getDeviceId()}`;
+
+            // Track whether load succeeded or timed out
+            let loadResolved = false;
+
+            // Set up a timeout warning if iframe takes too long
+            const timeoutHandle = setTimeout(() => {
+              if (!loadResolved) {
+                UI.toast(
+                  "Dashboard is taking longer than expected. Retrying…",
+                  "warning"
+                );
+                AuditLog.record("IFRAME_LOAD_TIMEOUT");
+              }
+            }, CONFIG.IFRAME_TIMEOUT_MS);
+
+            // Retry logic: attempt to load the iframe URL up to MAX_RETRY_ATTEMPTS times
+            try {
+              await retryWithBackoff(
+                (attempt) =>
+                  new Promise((resolve, reject) => {
+                    AuditLog.record("IFRAME_LOAD_ATTEMPT", { attempt });
+
+                    // Each retry gets a fresh cache-busting timestamp
+                    iframe.src = `${APP_MACRO_URL}?cb=${Date.now()}&device=${getDeviceId()}&attempt=${attempt}`;
+
+                    // Resolve on load; reject on error
+                    const onLoad = () => {
+                      loadResolved = true;
+                      clearTimeout(timeoutHandle);
+                      iframe.removeEventListener("error", onError);
+                      AuditLog.record("IFRAME_LOADED_SUCCESS", { attempt });
+                      resolve();
+                    };
+
+                    const onError = () => {
+                      iframe.removeEventListener("load", onLoad);
+                      reject(new Error(`Iframe load error on attempt ${attempt}`));
+                    };
+
+                    iframe.addEventListener("load",  onLoad,  { once: true });
+                    iframe.addEventListener("error", onError, { once: true });
+                  })
+              );
+            } catch (err) {
+              clearTimeout(timeoutHandle);
+              UI.toast(
+                "Failed to load the dashboard after multiple attempts. Please check your connection.",
+                "error"
+              );
+              AuditLog.record("IFRAME_LOAD_EXHAUSTED", { error: err.message });
+            }
+          } else {
+            AuditLog.record("IFRAME_ELEMENT_MISSING");
+            console.error("[Shwari] #macro-frame element not found in DOM.");
+          }
+
+          // ── Trigger Assimilation Animation ───────────────────────
+          if (typeof window.executeAssimilation === "function") {
+            window.executeAssimilation();
+            AuditLog.record("ASSIMILATION_TRIGGERED");
+          }
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  14. RESET DEVICE — Emergency Wipe with Confirmation
+        //  Clears all stored data and reloads to fresh registration
+        // ─────────────────────────────────────────────────────────────
+
+        window.resetDevice = () => {
+          const confirmed = confirm(
+            `⚠️ Reset ${CONFIG.APP_NAME}?\n\n` +
+            "This will permanently remove your secure registration and session from this device.\n\n" +
+            "You will need to re-register to continue."
+          );
+
+          if (!confirmed) {
+            AuditLog.record("RESET_CANCELLED");
+            return;
+          }
+
+          AuditLog.record("DEVICE_RESET_CONFIRMED", { device: getDeviceId() });
+
+          // Wipe all app-namespaced keys from device storage
+          Store.clear();
+          AuditLog.clear(); // Also clear the log (privacy compliance)
+
+          UI.toast("Device reset complete. Reloading…", "info");
+          setTimeout(() => location.reload(), 600);
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  15. LOGOUT — Destroy Session Without Wiping Registration
+        //  Ends the current session so the user must tap "Continue" again
+        // ─────────────────────────────────────────────────────────────
+
+        window.handleLogout = () => {
+          Session.destroy("USER_LOGOUT");
+          AuditLog.record("USER_LOGGED_OUT");
+          UI.toast("You have been logged out.", "info");
+          setTimeout(() => location.reload(), 600);
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  16. THEME PERSISTENCE — Remember User's Preferred Theme
+        //  Reads saved theme on load; applies it immediately
+        // ─────────────────────────────────────────────────────────────
+
+        window.applyTheme = () => {
+          const savedTheme = Store.get(KEYS.THEME) || "light";
+          document.documentElement.setAttribute("data-theme", savedTheme);
+        };
+
+        window.toggleTheme = () => {
+          const current = document.documentElement.getAttribute("data-theme") || "light";
+          const next = current === "light" ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", next);
+          Store.set(KEYS.THEME, next);
+          AuditLog.record("THEME_TOGGLED", { theme: next });
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  17. DIAGNOSTICS — Developer Debug Panel (DevTools Only)
+        //  Attach to window so it can be called from browser console
+        // ─────────────────────────────────────────────────────────────
+
+        window.__shwariDiag = () => {
+          const diag = {
+            version:        CONFIG.VERSION,
+            device_id:      getDeviceId(),
+            is_pwa:         isPWAGateway(),
+            is_online:      navigator.onLine,
+            is_registered:  Store.get(KEYS.REGISTERED) === "true",
+            emp_email:      Store.get(KEYS.EMP_EMAIL),
+            session_valid:  Session.isValid(),
+            session_ttl:    Session.isValid() ? Session.timeRemaining() : "None",
+            login_attempts: Store.get(KEYS.LOGIN_ATTEMPTS) || "0",
+            locked_out:     BruteGuard.isLockedOut(),
+            last_seen:      Store.get(KEYS.LAST_SEEN),
+            audit_entries:  AuditLog.read().length,
+            audit_log:      AuditLog.read(),
+          };
+          console.table({ ...diag, audit_log: `[${diag.audit_entries} entries]` });
+          console.log("[Shwari] Full Audit Log:", diag.audit_log);
+          return diag;
+        };
+
+        // ─────────────────────────────────────────────────────────────
+        //  18. NETWORK STATUS LISTENERS — React to Connection Changes
+        //  Informs the user immediately when connectivity changes
+        // ─────────────────────────────────────────────────────────────
+
+        window.addEventListener("offline", () => {
+          console.warn("[Shwari] Device went offline.");
+          AuditLog.record("NETWORK_WENT_OFFLINE");
+          UI.toast("You are now offline. Some features may be unavailable.", "warning");
+
+          // Visually mark the app as offline if element exists
+          const offlineIndicator = UI.get("offline-indicator");
+          if (offlineIndicator) offlineIndicator.classList.remove("hidden");
+        });
+
+        window.addEventListener("online", () => {
+          console.info("[Shwari] Device is back online.");
+          AuditLog.record("NETWORK_RESTORED");
+          UI.toast("Connection restored. You're back online.", "success");
+
+          // Hide the offline indicator
+          const offlineIndicator = UI.get("offline-indicator");
+          if (offlineIndicator) offlineIndicator.classList.add("hidden");
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        //  19. VISIBILITY API — Auto-refresh Session on Tab Focus
+        //  Detects when user returns to the app after leaving it
+        // ─────────────────────────────────────────────────────────────
+
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") {
+            AuditLog.record("APP_FOREGROUNDED");
+            // If the session expired while the user was away, prompt re-auth
+            if (Store.get(KEYS.REGISTERED) === "true" && !Session.isValid()) {
+              console.info("[Shwari] Session expired while app was backgrounded.");
+              UI.toast("Your session has expired. Please continue to re-authenticate.", "warning");
+            }
+          } else {
+            AuditLog.record("APP_BACKGROUNDED");
+          }
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        //  20. BEFOREINSTALLPROMPT — Capture Native Install Prompt
+        //  Stores the event so a custom "Install" button can trigger it
+        // ─────────────────────────────────────────────────────────────
+
+        let _deferredInstallPrompt = null;
+
+        window.addEventListener("beforeinstallprompt", (event) => {
+          event.preventDefault(); // Suppress the automatic browser mini-infobar
+          _deferredInstallPrompt = event;
+          AuditLog.record("INSTALL_PROMPT_AVAILABLE");
+          // Show your custom install button if present
+          const installBtn = UI.get("custom-install-btn");
+          if (installBtn) installBtn.classList.remove("hidden");
+        });
+
+        /**
+         * Triggers the native PWA install prompt programmatically.
+         * Attach to your custom install button's click handler.
+         */
+        window.triggerInstallPrompt = async () => {
+          if (!_deferredInstallPrompt) {
+            UI.toast("Install option is not available right now.", "info");
+            return;
+          }
+          _deferredInstallPrompt.prompt();
+          const { outcome } = await _deferredInstallPrompt.userChoice;
+          AuditLog.record("INSTALL_PROMPT_OUTCOME", { outcome });
+          _deferredInstallPrompt = null; // Can only be used once
+          const installBtn = UI.get("custom-install-btn");
+          if (installBtn) installBtn.classList.add("hidden");
+        };
+
+        window.addEventListener("appinstalled", () => {
+          AuditLog.record("PWA_INSTALLED_SUCCESSFULLY");
+          UI.toast(`${CONFIG.APP_NAME} installed successfully!`, "success");
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        //  AUTO-INIT — Apply Theme Immediately on Script Load
+        //  Prevents flash of unstyled content (FOUC) for theme
+        // ─────────────────────────────────────────────────────────────
+
+        window.applyTheme();
+    </script>
+
+    <!-- =========================================
+         PAYMENT NOTIFICATION AD (FULL SCREEN)
+         Set PAYMENT_DATE to your target date.
+         The ad auto-hides after that date passes.
+         ========================================= -->
+    <div id="payment-ad-overlay" style="display:none;position:fixed;inset:0;z-index:200000;background:#ffffff;justify-content:flex-start;align-items:center;flex-direction:column;opacity:0;transition:opacity 0.4s ease;font-family:'Inter',system-ui,sans-serif;">
+        
+        <!-- Close Button -->
+        <button onclick="dismissAd()" style="position:absolute;top:max(20px, env(safe-area-inset-top));right:20px;z-index:10;width:40px;height:40px;background:rgba(255,255,255,0.9);border:none;border-radius:50%;cursor:pointer;font-size:18px;color:#111;display:none;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:transform 0.2s;">✕</button>
+
+        <!-- Full Width Image Section -->
+        <div style="width:100%;flex:0 0 45%;max-height:45vh;overflow:hidden;position:relative;background:#f8fafc;">
+            <img src="https://img.magnific.com/free-vector/salary-payment-concept-illustration-with-man-get-income-his-job_513217-187.jpg?semt=ais_hybrid&w=740&q=80"Payment notification" style="width:100%;height:100%;object-fit:cover;object-position:center top;" />
+            <!-- Fade gradient to blend image into the white bottom half -->
+            <div style="position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);"></div>
+        </div>
+
+        <!-- White Content Section -->
+        <div style="background:#ffffff;width:100%;flex:1;padding:30px 24px max(40px, env(safe-area-inset-bottom));text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px 14px;border-radius:20px;margin-bottom:16px;">
+                <span style="width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;"></span>
+                Payment Scheduled
+            </div>
+            
+            <p style="font-size:15px;color:#6b7280;font-weight:600;margin:0 0 8px;letter-spacing:0.3px;">You will receive your payment on</p>
+            
+            <div style="font-size:32px;font-weight:900;color:#111827;letter-spacing:-0.5px;margin-bottom:4px;" id="pay-ad-date">—</div>
+            <div style="font-size:14px;color:#9ca3af;margin-bottom:24px;font-weight:500;" id="pay-ad-day"></div>
+
+            <div style="width:50px;height:4px;background:#10b981;border-radius:2px;margin:0 auto 24px;"></div>
+
+            <p style="font-size:16px;color:#374151;line-height:1.6;margin:0;max-width:340px;">FYI:<strong style="color:#111827;"> All Bank Charges are Payable by the Employee</strong> @ 2026 KCB Bank's tariff</p>
+
+            <button onclick="dismissAd()" style="margin-top:auto;width:100%;max-width:340px;padding:18px;background:#10b981;color:#fff;border:none;border-radius:18px;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 8px 25px rgba(16,185,129,0.35);">Got It, Thanks!</button>
+        </div>
+    </div>
+
+    <script>
+    function dismissAd() {
+        window._adVisible = false;
+        var overlay = document.getElementById('payment-ad-overlay');
+        overlay.style.opacity = '0';
+        
+        setTimeout(function() {
+            overlay.style.display = 'none';
+            var metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
+            metaThemeColors.forEach(function(meta) {
+                meta.setAttribute("content", "#111827");
+            });
+        }, 400);
+    }
+
+    (function(){
+        // ── SET YOUR PAYMENT DATE HERE ──────────────────────────────
+        var PAYMENT_DATE = new Date('2026-07-25T23:59:59'); // Automatically stops at midnight on this date
+        // ─────────────────────────────────────────────────────────────
+
+        var now = new Date();
+        if (now > PAYMENT_DATE) return; // Past the date — do nothing
+
+        // Format date label dynamically based on PAYMENT_DATE
+        var days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        var d      = PAYMENT_DATE;
+        var day    = d.getDate();
+        var suffix = (day === 1 || day === 21 || day === 31) ? 'st' : (day === 2 || day === 22) ? 'nd' : (day === 3 || day === 23) ? 'rd' : 'th';
+        
+        var dateEl = document.getElementById('pay-ad-date');
+        var dayEl  = document.getElementById('pay-ad-day');
+        if (dateEl) dateEl.textContent = day + suffix + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+        if (dayEl)  dayEl.textContent  = days[d.getDay()] + ' ·';
+
+        var overlay = document.getElementById('payment-ad-overlay');
+
+        function showAd() {
+            window._adVisible = true;
+            overlay.style.display = 'flex';
+            
+            
+
+            requestAnimationFrame(function(){
+                requestAnimationFrame(function(){
+                    overlay.style.opacity = '1';
+            var metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
+            metaThemeColors.forEach(function(meta) {
+                meta.setAttribute("content", "#ffffff");
+            });
+                });
+            });
+        }
+
+        // Show EVERY TIME the user logs in / app becomes active.
+        var _orig = window.onMacroSuccess;
+        window.onMacroSuccess = function(){
+            if (_orig) _orig.apply(this, arguments);
+            setTimeout(showAd, 1500); // Wait 1.5s after dashboard loads, then pop up full screen
+        };
+    })();
+    </script>
+
+</body>
+</html>
