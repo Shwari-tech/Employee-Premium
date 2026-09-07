@@ -2140,11 +2140,197 @@
         // =========================================
         // BACKEND & ENHANCED MACRO INITIALIZATION
         // =========================================
-        const MACRO_URL = "https://script.google.com/macros/s/AKfycby1vdgFykeHPEw9ceaEpNNv8MMp5-7fSUxq_IgbHybo-m6-qhQ6m8FLuPmGR-C4jD1JJg/exec";
+        // ─────────────────────────────────────────────────────────────
+        //  LOAD BALANCER — 10 Independent Macro Deployments
+        //  Replace each URL below with a UNIQUE deployment of the same
+        //  Apps Script project (Deploy → New deployment → repeat x10).
+        //  Each deployment is a fully separate execution quota/server,
+        //  so spreading users across all 10 multiplies total throughput.
+        // ─────────────────────────────────────────────────────────────
+        const MACRO_ENDPOINTS = [
+            "https://script.google.com/macros/s/AKfycby1vdgFykeHPEw9ceaEpNNv8MMp5-7fSUxq_IgbHybo-m6-qhQ6m8FLuPmGR-C4jD1JJg/exec", // node-1
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_2/exec", // node-2
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_3/exec", // node-3
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_4/exec", // node-4
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_5/exec", // node-5
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_6/exec", // node-6
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_7/exec", // node-7
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_8/exec", // node-8
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_9/exec", // node-9
+            "https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_10/exec" // node-10
+        ];
+
+        const LoadBalancer = {
+            LS_ACTIVE_KEY: 'shwari_lb_active_node',
+            LS_BLACKLIST_KEY: 'shwari_lb_blacklist',
+            LS_FAILCOUNT_KEY: 'shwari_lb_failcount',
+            HEALTH_TIMEOUT_MS: 6000,
+            BLACKLIST_DURATION_MS: 60000,
+            FAIL_THRESHOLD: 3,
+
+            _readJSON(key, fallback) {
+                try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+                catch (e) { return fallback; }
+            },
+            _writeJSON(key, val) {
+                try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+            },
+
+            /**
+             * Deterministic, even distribution: hashes a stable per-device ID
+             * into one of the 10 endpoints, spreading users roughly equally
+             * across all nodes without needing a shared coordinating server.
+             */
+            _hashToIndex(str, mod) {
+                let h = 0;
+                for (let i = 0; i < str.length; i++) {
+                    h = (h * 31 + str.charCodeAt(i)) >>> 0;
+                }
+                return h % mod;
+            },
+
+            _getDeviceSeed() {
+                let seed = localStorage.getItem('shwari_lb_seed');
+                if (!seed) {
+                    seed = 'seed-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+                    localStorage.setItem('shwari_lb_seed', seed);
+                }
+                return seed;
+            },
+
+            isBlacklisted(index) {
+                const blacklist = this._readJSON(this.LS_BLACKLIST_KEY, {});
+                const until = blacklist[index];
+                if (!until) return false;
+                if (Date.now() > until) {
+                    delete blacklist[index];
+                    this._writeJSON(this.LS_BLACKLIST_KEY, blacklist);
+                    return false;
+                }
+                return true;
+            },
+
+            blacklistNode(index) {
+                const blacklist = this._readJSON(this.LS_BLACKLIST_KEY, {});
+                blacklist[index] = Date.now() + this.BLACKLIST_DURATION_MS;
+                this._writeJSON(this.LS_BLACKLIST_KEY, blacklist);
+                console.warn(`[LoadBalancer] Node ${index} blacklisted for ${this.BLACKLIST_DURATION_MS / 1000}s — traffic rerouted.`);
+            },
+
+            recordFailure(index) {
+                const counts = this._readJSON(this.LS_FAILCOUNT_KEY, {});
+                counts[index] = (counts[index] || 0) + 1;
+                this._writeJSON(this.LS_FAILCOUNT_KEY, counts);
+                if (counts[index] >= this.FAIL_THRESHOLD) {
+                    this.blacklistNode(index);
+                    counts[index] = 0;
+                    this._writeJSON(this.LS_FAILCOUNT_KEY, counts);
+                }
+            },
+
+            recordSuccess(index) {
+                const counts = this._readJSON(this.LS_FAILCOUNT_KEY, {});
+                if (counts[index]) {
+                    counts[index] = 0;
+                    this._writeJSON(this.LS_FAILCOUNT_KEY, counts);
+                }
+            },
+
+            /**
+             * Ordered candidate list: this device's "home" node first (even
+             * distribution), then the remaining 9 in rotated order — skipping
+             * anything currently blacklisted so traffic drains off busy/failing
+             * nodes toward the healthy ones automatically.
+             */
+            getCandidateOrder() {
+                const total = MACRO_ENDPOINTS.length;
+                const homeIndex = this._hashToIndex(this._getDeviceSeed(), total);
+                const order = [];
+                for (let i = 0; i < total; i++) {
+                    order.push((homeIndex + i) % total);
+                }
+                return order.filter(idx => !this.isBlacklisted(idx))
+                       .concat(order.filter(idx => this.isBlacklisted(idx)));
+            },
+
+            getStickyIndex() {
+                const saved = localStorage.getItem(this.LS_ACTIVE_KEY);
+                if (saved !== null) {
+                    const idx = parseInt(saved, 10);
+                    if (!isNaN(idx) && idx >= 0 && idx < MACRO_ENDPOINTS.length && !this.isBlacklisted(idx)) {
+                        return idx;
+                    }
+                }
+                return null;
+            },
+
+            setStickyIndex(index) {
+                localStorage.setItem(this.LS_ACTIVE_KEY, String(index));
+            },
+
+            async _probe(url) {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), this.HEALTH_TIMEOUT_MS);
+                try {
+                    await fetch(`${url}?probe=1&cb=${Date.now()}`, {
+                        method: 'HEAD',
+                        mode: 'no-cors',
+                        signal: controller.signal
+                    });
+                    clearTimeout(timer);
+                    return true;
+                } catch (e) {
+                    clearTimeout(timer);
+                    return false;
+                }
+            },
+
+            /**
+             * Health-checks the sticky/home node first, then walks the
+             * candidate order (skipping blacklisted nodes) until one responds.
+             */
+            async resolveActiveEndpoint() {
+                const sticky = this.getStickyIndex();
+                const candidates = sticky !== null
+                    ? [sticky, ...this.getCandidateOrder().filter(i => i !== sticky)]
+                    : this.getCandidateOrder();
+
+                for (const idx of candidates) {
+                    const url = MACRO_ENDPOINTS[idx];
+                    if (!url || url.includes('REPLACE_WITH_DEPLOYMENT')) continue;
+                    const healthy = await this._probe(url);
+                    if (healthy) {
+                        this.recordSuccess(idx);
+                        this.setStickyIndex(idx);
+                        console.log(`[LoadBalancer] Routed to node ${idx + 1}/${MACRO_ENDPOINTS.length}`);
+                        return { url, index: idx };
+                    } else {
+                        this.recordFailure(idx);
+                    }
+                }
+
+                const fallbackIdx = sticky !== null ? sticky : this._hashToIndex(this._getDeviceSeed(), MACRO_ENDPOINTS.length);
+                return { url: MACRO_ENDPOINTS[fallbackIdx], index: fallbackIdx };
+            },
+
+            reportLoadFailure(index) {
+                if (index == null) return;
+                this.recordFailure(index);
+                this.recordFailure(index); // weight real load failures double vs probe failures
+            },
+
+            reportLoadSuccess(index) {
+                if (index == null) return;
+                this.recordSuccess(index);
+            }
+        };
+
+        const MACRO_URL = MACRO_ENDPOINTS[0];
         
         // Super Stable Macro Engine with Blob Offline Injection
         const MacroEngine = {
             url: MACRO_URL,
+            activeNodeIndex: null,
             frame: document.getElementById('macro-frame'),
             retries: 0,
             maxRetries: 3,
@@ -2202,9 +2388,11 @@
                         const html = await res.text();
                         await ShwariDB.save(html);
                         this.updateSyncBadge(Date.now(), false);
+                        LoadBalancer.reportLoadSuccess(this.activeNodeIndex);
                     }
                 } catch (e) {
                     console.log("Silent sync fetch skipped or failed.");
+                    LoadBalancer.reportLoadFailure(this.activeNodeIndex);
                 }
             },
 
@@ -2235,10 +2423,18 @@
                     await this.loadOfflineBlob();
                     return;
                 }
-                this.frame.src = `${this.url}?cb=${Date.now()}&client=shwari_app`;
+
+                // LOAD BALANCING: resolve which of the 10 nodes to hit this time,
+                // rerouting away from any currently-blacklisted (overloaded/failing) node.
+                const resolved = await LoadBalancer.resolveActiveEndpoint();
+                this.url = resolved.url;
+                this.activeNodeIndex = resolved.index;
+
+                this.frame.src = `${this.url}?cb=${Date.now()}&client=shwari_app&node=${resolved.index}`;
 
                 this.frame.onerror = () => {
                     console.warn("Iframe onerror fired — loading offline blob.");
+                    LoadBalancer.reportLoadFailure(this.activeNodeIndex);
                     clearTimeout(this.timeoutId);
                     this.loadOfflineBlob();
                 };
@@ -2266,6 +2462,7 @@
                     this.loaded = true;
                     this.isOfflineView = false;
                     clearTimeout(this.timeoutId);
+                    LoadBalancer.reportLoadSuccess(this.activeNodeIndex);
                     
                     if (offlineBanner) offlineBanner.classList.remove('show');
 
@@ -2305,6 +2502,10 @@
             handleTimeout() {
                 if (this.loaded) return;
                 console.warn("Macro load timeout. Retrying...");
+
+                // Real timeout on this node = strong signal it's overloaded/down.
+                LoadBalancer.reportLoadFailure(this.activeNodeIndex);
+
                 this.retries++;
                 
                 if (this.retries <= this.maxRetries) {
@@ -2802,8 +3003,9 @@
                 } catch(e) { /* cross-origin — expected */ }
 
                 // Method 2: Fresh fetch (most reliable — always gets latest)
+                // Uses whichever node the load balancer currently has active for this device.
                 if (!html || html.length < 1000) {
-                    const res = await fetch(`${MACRO_URL}?cb=${Date.now()}&client=shwari_offline_save`);
+                    const res = await fetch(`${MacroEngine.url}?cb=${Date.now()}&client=shwari_offline_save`);
                     if (res.ok) html = await res.text();
                 }
 
@@ -4006,7 +4208,10 @@
           // ── Inject Macro Iframe with Cache-Busting Param ─────────
           const iframe = UI.get("macro-frame");
           if (iframe) {
-            const macroURL = `${APP_MACRO_URL}?cb=${Date.now()}&device=${getDeviceId()}`;
+            const _lbResolved = await LoadBalancer.resolveActiveEndpoint();
+            const _activeMacroUrl = _lbResolved.url;
+            AuditLog.record("LOAD_BALANCER_NODE_SELECTED", { node_index: _lbResolved.index });
+            const macroURL = `${_activeMacroUrl}?cb=${Date.now()}&device=${getDeviceId()}`;
 
             // Track whether load succeeded or timed out
             let loadResolved = false;
@@ -4029,21 +4234,24 @@
                   new Promise((resolve, reject) => {
                     AuditLog.record("IFRAME_LOAD_ATTEMPT", { attempt });
 
-                    // Each retry gets a fresh cache-busting timestamp
-                    iframe.src = `${APP_MACRO_URL}?cb=${Date.now()}&device=${getDeviceId()}&attempt=${attempt}`;
+                    // Each retry gets a fresh cache-busting timestamp, and reroutes
+                    // to a different balanced node than the last attempt.
+                    iframe.src = `${_activeMacroUrl}?cb=${Date.now()}&device=${getDeviceId()}&attempt=${attempt}&node=${_lbResolved.index}`;
 
                     // Resolve on load; reject on error
                     const onLoad = () => {
                       loadResolved = true;
                       clearTimeout(timeoutHandle);
                       iframe.removeEventListener("error", onError);
-                      AuditLog.record("IFRAME_LOADED_SUCCESS", { attempt });
+                      LoadBalancer.reportLoadSuccess(_lbResolved.index);
+                      AuditLog.record("IFRAME_LOADED_SUCCESS", { attempt, node_index: _lbResolved.index });
                       resolve();
                     };
 
                     const onError = () => {
                       iframe.removeEventListener("load", onLoad);
-                      reject(new Error(`Iframe load error on attempt ${attempt}`));
+                      LoadBalancer.reportLoadFailure(_lbResolved.index);
+                      reject(new Error(`Iframe load error on attempt ${attempt} (node ${_lbResolved.index})`));
                     };
 
                     iframe.addEventListener("load",  onLoad,  { once: true });
