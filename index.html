@@ -1669,31 +1669,33 @@
 
     </style>
 <style>
-/* =========================================
-   EMPLOYEE RECORDS UPDATE AD (instant on launch)
-   ========================================= */
-#ea-overlay{position:fixed;inset:0;z-index:300000;display:flex;flex-direction:column;background:#fff;font-family:'Inter',system-ui,-apple-system,sans-serif;opacity:1;transition:opacity .35s ease;overflow:hidden}
+/* EMPLOYEE RECORDS UPDATE AD (instant on launch) */
+#ea-overlay{position:fixed;inset:0;z-index:300000;display:flex;flex-direction:column;background:#fff;padding-top:env(safe-area-inset-top);font-family:'Inter',system-ui,-apple-system,sans-serif;opacity:1;transition:opacity .35s ease;overflow:hidden}
 #ea-overlay.ea-hide{opacity:0;pointer-events:none}
-.ea-hero{position:relative;flex:0 0 40%;max-height:40vh;background:linear-gradient(135deg,#dcfce7,#f0fdf4);overflow:hidden;padding-top:env(safe-area-inset-top)}
+.ea-hero{position:relative;flex:0 0 38%;max-height:38vh;margin:10px 14px 0;border-radius:26px;overflow:hidden;background:linear-gradient(110deg,#dcfce7 30%,#f0fdf4 50%,#dcfce7 70%);background-size:200% 100%;animation:eaShimmer 1.4s linear infinite;box-shadow:0 12px 30px rgba(44,122,71,.2)}
+@keyframes eaShimmer{to{background-position:-200% 0}}
 .ea-hero img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
-.ea-fade{position:absolute;left:0;right:0;bottom:0;height:48px;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff)}
-.ea-body{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 24px max(28px,calc(16px + env(safe-area-inset-bottom)));overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ea-pill{position:absolute;top:12px;left:12px;display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.96);color:#92400e;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;padding:6px 13px;border-radius:50px;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.ea-dot{width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block;animation:eaPulse 1.6s ease-in-out infinite}
+@keyframes eaPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.6)}50%{box-shadow:0 0 0 6px rgba(245,158,11,0)}}
+.ea-body{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 22px max(26px,calc(16px + env(safe-area-inset-bottom)));overflow-y:auto;-webkit-overflow-scrolling:touch}
 .ea-body>*{animation:eaUp .55s cubic-bezier(.2,.8,.2,1.05) both}
 .ea-body>*:nth-child(2){animation-delay:.05s}
 .ea-body>*:nth-child(3){animation-delay:.1s}
 .ea-body>*:nth-child(4){animation-delay:.15s}
 .ea-body>*:nth-child(5){animation-delay:.2s}
 @keyframes eaUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
-.ea-pill{display:inline-flex;align-items:center;gap:7px;background:#fffbeb;border:1.5px solid #fde68a;color:#92400e;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:5px 13px;border-radius:50px;margin-bottom:12px}
-.ea-dot{width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block}
-.ea-title{font-size:23px;font-weight:900;color:#0f172a;letter-spacing:-.4px;line-height:1.2;margin:0 0 8px}
+.ea-title{font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-.5px;line-height:1.2;margin:0 0 8px}
 .ea-text{font-size:14px;color:#64748b;line-height:1.6;max-width:320px;margin:0 0 16px}
-.ea-deadline{display:flex;align-items:center;gap:14px;width:100%;max-width:340px;background:linear-gradient(135deg,#1f6e3f 0%,#55d082 100%);color:#fff;border-radius:18px;padding:14px 18px;text-align:left;box-shadow:0 6px 22px rgba(44,122,71,.28)}
+.ea-deadline{display:flex;align-items:center;gap:14px;width:100%;max-width:340px;background:linear-gradient(135deg,#1f6e3f 0%,#55d082 100%);color:#fff;border-radius:20px;padding:14px 18px;text-align:left;box-shadow:0 8px 24px rgba(44,122,71,.3)}
 .ea-deadline>i{font-size:24px;opacity:.9;flex-shrink:0}
 .ea-dl-inner{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
 .ea-dl-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;opacity:.85}
 #ea-deadline{font-size:19px;font-weight:900;letter-spacing:-.3px;line-height:1.2}
-.ea-chip{background:rgba(255,255,255,.22);border-radius:12px;padding:5px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+.ea-chip{background:rgba(255,255,255,.22);border-radius:12px;padding:6px 11px;font-size:11px;font-weight:800;white-space:nowrap}
+.ea-chip.ea-urgent{background:#fef3c7;color:#92400e}
+.ea-meta{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.ea-meta span{display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:12px;font-weight:600;padding:6px 11px;border-radius:50px}
 .ea-actions{margin-top:auto;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;padding-top:18px}
 .ea-btn{width:100%;padding:16px;border-radius:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;text-decoration:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:transform .15s ease}
 .ea-btn:active{transform:scale(.97)}
@@ -1701,18 +1703,18 @@
 .ea-skip{background:#f1f5f9;color:#475569;border:none}
 </style>
 <base target="_blank">
+<link rel="preload" as="image" href="https://mmenterprises.co.in/wp-content/uploads/2023/05/employer-of-records.jpg">
 </head>
 <body>
 
     <!-- EMPLOYEE RECORDS UPDATE AD -->
 <div id="ea-overlay" role="dialog" aria-modal="true" aria-label="Update employee records">
     <div class="ea-hero">
-        <img src="https://mmenterprises.co.in/wp-content/uploads/2023/05/employer-of-records.jpg" alt="Employee records" onerror="this.style.display='none'">
-        <div class="ea-fade"></div>
+        <img src="https://mmenterprises.co.in/wp-content/uploads/2023/05/employer-of-records.jpg" alt="Employee records" fetchpriority="high" decoding="async" onerror="this.style.display='none'">
+        <div class="ea-pill"><span class="ea-dot"></span>Action Required</div>
     </div>
 
     <div class="ea-body">
-        <div class="ea-pill"><span class="ea-dot"></span>Action Required</div>
         <h2 class="ea-title">Update Your Employee Records</h2>
         <p class="ea-text">Please complete the Google Form to keep your employee records accurate and up to date.</p>
 
@@ -1723,6 +1725,12 @@
                 <span id="ea-deadline">—</span>
             </div>
             <span class="ea-chip" id="ea-chip"></span>
+        </div>
+
+        <div class="ea-meta">
+            <span><i class="fas fa-clock"></i>2 min</span>
+            <span><i class="fas fa-lock"></i>Secure form</span>
+            <span><i class="fas fa-circle-check"></i>Required</span>
         </div>
 
         <div class="ea-actions">
@@ -1743,24 +1751,30 @@
     if (!ov) return;
     if (new Date() > DEADLINE) { ov.remove(); return; }
 
-    window._adVisible = true; // stops the app from changing the status-bar colour while ad is up
+    // White status/notification bar ONLY while this ad is showing
+    var metas = document.querySelectorAll('meta[name="theme-color"]');
+    function setBar(c){ metas.forEach(function(m){ m.setAttribute('content', c); }); }
+    window._adVisible = true;   // stops the app from recolouring the bar while ad is up
+    setBar('#ffffff');
 
     var D = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     var M = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     document.getElementById('ea-deadline').textContent =
         D[DEADLINE.getDay()].slice(0,3) + ', ' + DEADLINE.getDate() + ' ' + M[DEADLINE.getMonth()] + ' ' + DEADLINE.getFullYear();
 
-    var left = Math.ceil((DEADLINE - new Date()) / 86400000);
-    document.getElementById('ea-chip').textContent = left <= 1 ? 'Last day' : left + ' days left';
+    var t0 = new Date(); t0.setHours(0,0,0,0);
+    var t1 = new Date(DEADLINE); t1.setHours(0,0,0,0);
+    var left = Math.round((t1 - t0) / 86400000);
+    var chip = document.getElementById('ea-chip');
+    chip.textContent = left <= 0 ? 'Last day' : left + (left === 1 ? ' day left' : ' days left');
+    if (left <= 3) chip.classList.add('ea-urgent');
 
     window.eaClose = function(){
         window._adVisible = false;
         ov.classList.add('ea-hide');
         setTimeout(function(){ ov.remove(); }, 400);
         var appActive = document.getElementById('app').classList.contains('active');
-        document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){
-            m.setAttribute('content', appActive ? '#111827' : '#ffffff');
-        });
+        setBar(appActive ? '#111827' : '#ffffff');   // back to normal colours
     };
 })();
 </script>
