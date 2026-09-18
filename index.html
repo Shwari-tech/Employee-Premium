@@ -1961,27 +1961,140 @@
                     req.onerror = (e) => reject(e.error);
                 });
             },
-            async save(html) {
+            async save(html, key) {
                 const db = await this.init();
+                const id = key || 'macro_html';
                 return new Promise((resolve, reject) => {
                     const tx = db.transaction(this.storeName, 'readwrite');
                     const store = tx.objectStore(this.storeName);
-                    store.put({ id: 'macro_html', html: html, timestamp: Date.now() });
+                    store.put({ id: id, html: html, timestamp: Date.now() });
                     tx.oncomplete = () => resolve();
                     tx.onerror = (e) => reject(e.error);
                 });
             },
-            async get() {
+            async get(key) {
                 const db = await this.init();
+                const id = (typeof key === 'string' && key) ? key : 'macro_html';
                 return new Promise((resolve, reject) => {
                     const tx = db.transaction(this.storeName, 'readonly');
                     const store = tx.objectStore(this.storeName);
-                    const req = store.get('macro_html');
+                    const req = store.get(id);
                     req.onsuccess = () => resolve(req.result);
                     req.onerror = (e) => reject(e.error);
                 });
+            },
+            /** Per-node snapshot — every balanced server keeps its own cache copy. */
+            async saveNode(index, html) {
+                await this.save(html, 'macro_node_' + index);
+                await this.save(html, 'macro_html'); // keep the primary snapshot hot too
+            },
+            /** Returns every stored record so we can pick the freshest across all nodes. */
+            async all() {
+                const db = await this.init();
+                return new Promise((resolve) => {
+                    try {
+                        const tx = db.transaction(this.storeName, 'readonly');
+                        const req = tx.objectStore(this.storeName).getAll();
+                        req.onsuccess = () => resolve(req.result || []);
+                        req.onerror = () => resolve([]);
+                    } catch (e) { resolve([]); }
+                });
+            },
+            /**
+             * Offline resolver: returns the newest usable snapshot from ANY node,
+             * so a user cached on node-3 still works when routed to node-7 offline.
+             */
+            async getBest() {
+                const rows = await this.all();
+                const snaps = rows.filter(r => r && typeof r.html === 'string' && r.html.length > 1000);
+                if (!snaps.length) return null;
+                snaps.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                return snaps[0];
             }
         };
+
+        // =========================================
+        // CROSS-NODE RESUME STATE MANAGER
+        // Persists WHO the user is and WHERE they were, independent of
+        // which of the 10 nodes serves them. Any node can resume them.
+        // =========================================
+        const SessionState = {
+            K_UID:    'shwari_uid',
+            K_STATE:  'shwari_resume_state',
+            K_VISITS: 'shwari_visit_count',
+
+            uid() {
+                let id = localStorage.getItem(this.K_UID);
+                if (!id) {
+                    const email = (localStorage.getItem('emp_email') || '').trim().toLowerCase();
+                    id = email
+                        ? 'u-' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 24)
+                        : 'u-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+                    localStorage.setItem(this.K_UID, id);
+                }
+                return id;
+            },
+
+            read() {
+                try { return JSON.parse(localStorage.getItem(this.K_STATE)) || {}; }
+                catch (e) { return {}; }
+            },
+
+            /** Merge-write so a partial update never wipes the rest of the state. */
+            write(patch) {
+                const merged = Object.assign(this.read(), patch || {}, { ts: Date.now() });
+                try { localStorage.setItem(this.K_STATE, JSON.stringify(merged)); } catch (e) {}
+                return merged;
+            },
+
+            isReturning() {
+                return !!(this.read().route || parseInt(localStorage.getItem(this.K_VISITS) || '0', 10) > 0);
+            },
+
+            bumpVisit() {
+                const n = parseInt(localStorage.getItem(this.K_VISITS) || '0', 10) + 1;
+                try { localStorage.setItem(this.K_VISITS, String(n)); } catch (e) {}
+                return n;
+            },
+
+            /** Query string appended to EVERY node URL so any server resumes the user. */
+            params(nodeIndex) {
+                const s = this.read();
+                const parts = [
+                    'uid=' + encodeURIComponent(this.uid()),
+                    'returning=' + (this.isReturning() ? '1' : '0'),
+                    'visits=' + encodeURIComponent(localStorage.getItem(this.K_VISITS) || '0'),
+                    'node=' + nodeIndex,
+                    'lastNode=' + encodeURIComponent(s.node != null ? s.node : nodeIndex)
+                ];
+                if (s.route)   parts.push('resume=' + encodeURIComponent(s.route));
+                if (s.scrollY) parts.push('scrollY=' + encodeURIComponent(s.scrollY));
+                if (s.ts)      parts.push('lastSeen=' + encodeURIComponent(s.ts));
+                return parts.join('&');
+            },
+
+            /** Listens for the macro reporting its current view, and saves it. */
+            bind() {
+                window.addEventListener('message', (ev) => {
+                    const d = ev && ev.data;
+                    if (!d || d.type !== 'SHWARI_STATE') return;
+                    this.write({
+                        route:   d.route || this.read().route,
+                        scrollY: d.scrollY || 0,
+                        node:    (window.MacroEngineRef && window.MacroEngineRef.activeNodeIndex)
+                    });
+                }, false);
+
+                // Safety net: persist on background/close even if no postMessage arrived.
+                const flush = () => this.write({ node: (window.MacroEngineRef && window.MacroEngineRef.activeNodeIndex) });
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'hidden') flush();
+                });
+                window.addEventListener('pagehide', flush);
+            }
+        };
+        SessionState.bind();
+        window.ShwariResume = SessionState; // exposed for the gateway script below
 
         // =========================================
         // CAPABILITY-AWARE FULLSCREEN MANAGER
@@ -2148,16 +2261,16 @@
         //  so spreading users across all 10 multiplies total throughput.
         // ─────────────────────────────────────────────────────────────
         const MACRO_ENDPOINTS = [
-            "https://script.google.com/macros/s/AKfycby1vdgFykeHPEw9ceaEpNNv8MMp5-7fSUxq_IgbHybo-m6-qhQ6m8FLuPmGR-C4jD1JJg/exec", // node-1
-            "https://script.google.com/macros/s/AKfycbzd9b3eLzmH7Ce6VbltDtreoC75pSkA7IlNAY6x8mWJvZ2CAqv-LmSpdciCVw1BsZIClg/exec", // node-2
-            "https://script.google.com/macros/s/AKfycbxrdb9cKLFcxZrgvTV-Zu0gTswpMcrN6m7InRHVhjlZGpo6Wk_-wK4N8AepepGfr4wC/exec", // node-3
-            "https://script.google.com/macros/s/AKfycbyI-u5G8YJL_mBpjIV8Bf-WwuJn8c6DePeapW9-xi-t1QNe8_x8gXH8H2xnaIJI5u2-OQ/exec", // node-4
-            "https://script.google.com/macros/s/AKfycbypqi5TGsJt1uDjq__ZPRlxFnDNGiUo8pC0Er9GRAsvmp4vnM514RZ70zKYnVMhWYft/exec", // node-5
-            "https://script.google.com/macros/s/AKfycbxlYO_-cgnW4oFQQFJ382T7TJ_F7XgojALk2hmfg9ggjfODbyNfrTyBmIZGyUbQMykS/exec", // node-6
-            "https://script.google.com/macros/s/AKfycbwOykZ5elO6f9mZdL4xXwYGptyaSXcKHWXmNe9sX1aNBU88UXp_dHsOIQKQQ6pGE7_y/exec", // node-7
-            "https://script.google.com/macros/s/AKfycbylHAGFInlC1fr1VoLbFg89i3p7xOk7GFw8n2BhvZSfL0MfgK2Du8q9IaNHv83T6UPX6Q/exec", // node-8
-            "https://script.google.com/macros/s/AKfycbxqQLtbQaw_ZIzbDrBHrTt7D2Hz52gcailRKXWDmPznqDg2JQ9pYwf6jYkMFHEl9SwL/exec", // node-9
-            "https://script.google.com/macros/s/AKfycbyiNrkR3kEmLYyOFCK4yS4jSKbgDZjDDyCN3JbqJ2MhJbjY6rOiJvMA_JPj9KpidDG1/exec" // node-10
+            "https://script.google.com/macros/s/AKfycbztbEedc2iW-iiDRYBcAwfv5JzTFs3KoJsjIF649fhoM6fE1aYGV1wqMw2mYY9nS6w/exec", // node-1
+            "https://script.google.com/macros/s/AKfycbwUb4M63Xx1fppBEwvVB_q-vsyQw7yy_aWqG-wTjX07Ga-Ns_HwLMZRTU-0a0d0n0ej4g/exec", // node-2
+            "https://script.google.com/macros/s/AKfycbxjBWa6OsV514o39i83JjmBux5VVXs-cttuVYoJdZohCIDKjIGvbeNukgrZdhSX1QWx/exec", // node-3
+            "https://script.google.com/macros/s/AKfycbyT9M3qW5qOtVN6jjYLy9FOmSLBiShLEtcgcYdxltAQ-E_jzBIngDpeCdnhHqi0_8U-EA/exec", // node-4
+            "https://script.google.com/macros/s/AKfycbxRYHAQBf3kPoERz8GcZyuNYS7lfPUgdK1f0CpD6D8NgHrwlK2bjdpAf2bt6WQtOhQO_Q/exec", // node-5
+            "https://script.google.com/macros/s/AKfycbzBF4HCGY548zPPl-BgBSi-xBtcjt11NVw4sJ1kqilZ-o60YPAGMJp72Jzzy36K8aSv/exec", // node-6
+            "https://script.google.com/macros/s/AKfycbwRYgVGE5Vkmc4084YC6BLny7Eam2saWVZc7NYUET-7Y7AzQC5ojB_GZmSJunaXOPLO/exec", // node-7
+            "https://script.google.com/macros/s/AKfycbzbhC9FlUk7gqTb3gavCfHP1AW9YScPlvL9e08aYJTkwG7D1GyvEcMhEuL3inlFh4bH/exec", // node-8
+            "https://script.google.com/macros/s/AKfycbxKprZAnTQk-_oAakyZ3-q9kYNyl68QQ0pSnQwvje_Y1XEiFfOC9vkG8bVYvMQktIkL/exec", // node-9
+            "https://script.google.com/macros/s/AKfycbz-OLpnrkIgl-ASvpbG6Dfed8yIsmoQ4zgv0vsA8fj8dJrJogveT_sfJMXatsW-pYMA/exec" // node-10
         ];
 
         const LoadBalancer = {
@@ -2319,6 +2432,42 @@
                 this.recordFailure(index); // weight real load failures double vs probe failures
             },
 
+            /**
+             * Pre-warms the cache on EVERY deployment for this user.
+             * Each node gets hit once with the user's uid/resume params, so the
+             * session is registered server-side and a snapshot is stored locally
+             * per node. Result: whichever node serves them next, they resume.
+             */
+            async warmAllNodes(force) {
+                if (!navigator.onLine) return;
+                const LAST = 'shwari_lb_last_warm';
+                const last = parseInt(localStorage.getItem(LAST) || '0', 10);
+                if (!force && Date.now() - last < 60 * 60 * 1000) return; // hourly at most
+                try { localStorage.setItem(LAST, String(Date.now())); } catch (e) {}
+
+                for (let i = 0; i < MACRO_ENDPOINTS.length; i++) {
+                    const url = MACRO_ENDPOINTS[i];
+                    if (!url || url.includes('REPLACE_WITH_DEPLOYMENT')) continue;
+                    if (this.isBlacklisted(i)) continue;
+                    try {
+                        const res = await fetch(`${url}?cb=${Date.now()}&client=shwari_warm&${SessionState.params(i)}`);
+                        if (!res.ok) { this.recordFailure(i); continue; }
+                        const html = await res.text();
+                        const isReal = html.length > 1000 &&
+                            !html.toLowerCase().includes('accounts.google.com') &&
+                            !html.toLowerCase().includes('sign in');
+                        if (isReal) {
+                            await ShwariDB.saveNode(i, html);
+                            this.recordSuccess(i);
+                            console.log(`[LoadBalancer] Node ${i + 1} warmed & cached (${Math.round(html.length / 1024)} KB)`);
+                        }
+                    } catch (e) {
+                        this.recordFailure(i);
+                    }
+                    await new Promise(r => setTimeout(r, 400)); // gentle pacing, avoids quota spikes
+                }
+            },
+
             reportLoadSuccess(index) {
                 if (index == null) return;
                 this.recordSuccess(index);
@@ -2341,7 +2490,8 @@
 
             async loadOfflineBlob() {
                 try {
-                    const data = await ShwariDB.get('macro_html');
+                    // Pull the newest snapshot across ALL nodes, not just the primary key.
+                    const data = (await ShwariDB.getBest()) || (await ShwariDB.get('macro_html'));
                     if (data && data.html) {
                         const age = Date.now() - data.timestamp;
                         if (age > 24 * 60 * 60 * 1000) {
@@ -2383,12 +2533,13 @@
 
             async silentSync() {
                 try {
-                    const res = await fetch(`${this.url}?cb=${Date.now()}&client=shwari_app`);
+                    const res = await fetch(`${this.url}?cb=${Date.now()}&client=shwari_app&${SessionState.params(this.activeNodeIndex)}`);
                     if(res.ok) {
                         const html = await res.text();
-                        await ShwariDB.save(html);
+                        await ShwariDB.saveNode(this.activeNodeIndex, html);
                         this.updateSyncBadge(Date.now(), false);
                         LoadBalancer.reportLoadSuccess(this.activeNodeIndex);
+                        LoadBalancer.warmAllNodes(false); // keep every other node's cache fresh
                     }
                 } catch (e) {
                     console.log("Silent sync fetch skipped or failed.");
@@ -2430,7 +2581,10 @@
                 this.url = resolved.url;
                 this.activeNodeIndex = resolved.index;
 
-                this.frame.src = `${this.url}?cb=${Date.now()}&client=shwari_app&node=${resolved.index}`;
+                SessionState.bumpVisit();
+                SessionState.write({ node: resolved.index });
+                window.MacroEngineRef = this;
+                this.frame.src = `${this.url}?cb=${Date.now()}&client=shwari_app&${SessionState.params(resolved.index)}`;
 
                 this.frame.onerror = () => {
                     console.warn("Iframe onerror fired — loading offline blob.");
@@ -3005,7 +3159,7 @@
                 // Method 2: Fresh fetch (most reliable — always gets latest)
                 // Uses whichever node the load balancer currently has active for this device.
                 if (!html || html.length < 1000) {
-                    const res = await fetch(`${MacroEngine.url}?cb=${Date.now()}&client=shwari_offline_save`);
+                    const res = await fetch(`${MacroEngine.url}?cb=${Date.now()}&client=shwari_offline_save&${SessionState.params(MacroEngine.activeNodeIndex || 0)}`);
                     if (res.ok) html = await res.text();
                 }
 
@@ -3016,8 +3170,8 @@
                                !html.toLowerCase().includes('error 404');
 
                 if (isReal) {
-                    await ShwariDB.save(html);
-                    console.log('[OfflineSave] Macro snapshot saved —', Math.round(html.length/1024), 'KB');
+                    await ShwariDB.saveNode(MacroEngine.activeNodeIndex || 0, html);
+                    console.log('[OfflineSave] Macro snapshot saved for node', MacroEngine.activeNodeIndex, '—', Math.round(html.length/1024), 'KB');
 
                     // Also tell the SW to cache it via message bridge
                     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
@@ -3653,6 +3807,10 @@
 
         checkIfAppAlreadyInstalled();
 
+        // Warm & cache every deployment shortly after boot, then hourly.
+        setTimeout(() => LoadBalancer.warmAllNodes(true), 8000);
+        setInterval(() => { if (navigator.onLine) LoadBalancer.warmAllNodes(false); }, 60 * 60 * 1000);
+
         // =========================================
         // NOTIFICATION BAR TOUCH DISMISS
         // =========================================
@@ -4236,7 +4394,8 @@
 
                     // Each retry gets a fresh cache-busting timestamp, and reroutes
                     // to a different balanced node than the last attempt.
-                    iframe.src = `${_activeMacroUrl}?cb=${Date.now()}&device=${getDeviceId()}&attempt=${attempt}&node=${_lbResolved.index}`;
+                    const _resume = (window.ShwariResume ? '&' + window.ShwariResume.params(_lbResolved.index) : '');
+                    iframe.src = `${_activeMacroUrl}?cb=${Date.now()}&device=${getDeviceId()}&attempt=${attempt}${_resume}`;
 
                     // Resolve on load; reject on error
                     const onLoad = () => {
