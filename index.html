@@ -1668,11 +1668,104 @@
         .pay-ad-cta:active { transform: scale(0.97); box-shadow: 0 4px 10px rgba(44,122,71,0.25); }
 
     </style>
+<style>
+/* =========================================
+   EMPLOYEE RECORDS UPDATE AD (instant on launch)
+   ========================================= */
+#ea-overlay{position:fixed;inset:0;z-index:300000;display:flex;flex-direction:column;background:#fff;font-family:'Inter',system-ui,-apple-system,sans-serif;opacity:1;transition:opacity .35s ease;overflow:hidden}
+#ea-overlay.ea-hide{opacity:0;pointer-events:none}
+.ea-hero{position:relative;flex:0 0 40%;max-height:40vh;background:linear-gradient(135deg,#dcfce7,#f0fdf4);overflow:hidden;padding-top:env(safe-area-inset-top)}
+.ea-hero img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.ea-fade{position:absolute;left:0;right:0;bottom:0;height:48px;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff)}
+.ea-body{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 24px max(28px,calc(16px + env(safe-area-inset-bottom)));overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ea-body>*{animation:eaUp .55s cubic-bezier(.2,.8,.2,1.05) both}
+.ea-body>*:nth-child(2){animation-delay:.05s}
+.ea-body>*:nth-child(3){animation-delay:.1s}
+.ea-body>*:nth-child(4){animation-delay:.15s}
+.ea-body>*:nth-child(5){animation-delay:.2s}
+@keyframes eaUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.ea-pill{display:inline-flex;align-items:center;gap:7px;background:#fffbeb;border:1.5px solid #fde68a;color:#92400e;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:5px 13px;border-radius:50px;margin-bottom:12px}
+.ea-dot{width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block}
+.ea-title{font-size:23px;font-weight:900;color:#0f172a;letter-spacing:-.4px;line-height:1.2;margin:0 0 8px}
+.ea-text{font-size:14px;color:#64748b;line-height:1.6;max-width:320px;margin:0 0 16px}
+.ea-deadline{display:flex;align-items:center;gap:14px;width:100%;max-width:340px;background:linear-gradient(135deg,#1f6e3f 0%,#55d082 100%);color:#fff;border-radius:18px;padding:14px 18px;text-align:left;box-shadow:0 6px 22px rgba(44,122,71,.28)}
+.ea-deadline>i{font-size:24px;opacity:.9;flex-shrink:0}
+.ea-dl-inner{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.ea-dl-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;opacity:.85}
+#ea-deadline{font-size:19px;font-weight:900;letter-spacing:-.3px;line-height:1.2}
+.ea-chip{background:rgba(255,255,255,.22);border-radius:12px;padding:5px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+.ea-actions{margin-top:auto;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;padding-top:18px}
+.ea-btn{width:100%;padding:16px;border-radius:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;text-decoration:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:transform .15s ease}
+.ea-btn:active{transform:scale(.97)}
+.ea-primary{background:linear-gradient(270deg,#2c7a47,#005c4b,#1f6e3f);background-size:400% 400%;color:#fff;border:none;box-shadow:0 8px 22px rgba(44,122,71,.32);animation:colorShift 6s ease infinite}
+.ea-skip{background:#f1f5f9;color:#475569;border:none}
+</style>
 <base target="_blank">
 </head>
 <body>
 
-    <!-- INSTAGRAM-STYLE LOADER -->
+    <!-- EMPLOYEE RECORDS UPDATE AD -->
+<div id="ea-overlay" role="dialog" aria-modal="true" aria-label="Update employee records">
+    <div class="ea-hero">
+        <img src="https://mmenterprises.co.in/wp-content/uploads/2023/05/employer-of-records.jpg" alt="Employee records" onerror="this.style.display='none'">
+        <div class="ea-fade"></div>
+    </div>
+
+    <div class="ea-body">
+        <div class="ea-pill"><span class="ea-dot"></span>Action Required</div>
+        <h2 class="ea-title">Update Your Employee Records</h2>
+        <p class="ea-text">Please complete the Google Form to keep your employee records accurate and up to date.</p>
+
+        <div class="ea-deadline">
+            <i class="fas fa-calendar-check"></i>
+            <div class="ea-dl-inner">
+                <span class="ea-dl-label">Update before</span>
+                <span id="ea-deadline">—</span>
+            </div>
+            <span class="ea-chip" id="ea-chip"></span>
+        </div>
+
+        <div class="ea-actions">
+            <a class="ea-btn ea-primary" href="https://forms.gle/s7zHCfv4tUFx8Dd59" target="_blank" rel="noopener noreferrer" onclick="setTimeout(eaClose,300)">
+                <i class="fas fa-pen-to-square"></i><span>Update Now</span>
+            </a>
+            <button class="ea-btn ea-skip" type="button" onclick="eaClose()">Skip</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    // ── SET THE DEADLINE HERE (ad auto-disappears after this) ──
+    var DEADLINE = new Date('2026-09-30T23:59:59');
+    // ───────────────────────────────────────────────────────────
+    var ov = document.getElementById('ea-overlay');
+    if (!ov) return;
+    if (new Date() > DEADLINE) { ov.remove(); return; }
+
+    window._adVisible = true; // stops the app from changing the status-bar colour while ad is up
+
+    var D = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var M = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('ea-deadline').textContent =
+        D[DEADLINE.getDay()].slice(0,3) + ', ' + DEADLINE.getDate() + ' ' + M[DEADLINE.getMonth()] + ' ' + DEADLINE.getFullYear();
+
+    var left = Math.ceil((DEADLINE - new Date()) / 86400000);
+    document.getElementById('ea-chip').textContent = left <= 1 ? 'Last day' : left + ' days left';
+
+    window.eaClose = function(){
+        window._adVisible = false;
+        ov.classList.add('ea-hide');
+        setTimeout(function(){ ov.remove(); }, 400);
+        var appActive = document.getElementById('app').classList.contains('active');
+        document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){
+            m.setAttribute('content', appActive ? '#111827' : '#ffffff');
+        });
+    };
+})();
+</script>
+
+<!-- INSTAGRAM-STYLE LOADER -->
     <div id="ig-loader">
         <div class="ig-icon-wrap"><i class="fas fa-elephant"></i></div>
         <p class="ig-from"> <span><strong>Shwari | Finance</strong></span></p>
@@ -1862,7 +1955,7 @@
             <div class="install-track">
                 <div class="install-bar" id="install-bar"></div>
             </div>
-            <p class="install-status-text" id="install-status-text">Preparing files…</p>
+            <p class="install-status-text" id="install-status-text">Preparing files...</p>
         </div>
 
         <div class="tick-wrap" id="tick-wrap">
@@ -3064,7 +3157,7 @@
                         <div id="fu-progress-track">
                             <div id="fu-progress-bar"></div>
                         </div>
-                        <span id="fu-progress-label">Applying update…</span>
+                        <span id="fu-progress-label">Applying update...</span>
                     </div>
 
                     <button id="fu-update-btn">
@@ -3084,10 +3177,10 @@
             const progLabel = modal.querySelector('#fu-progress-label');
 
             const steps = [
-                { pct: 20, label: 'Downloading update…'  },
-                { pct: 45, label: 'Verifying files…'      },
-                { pct: 70, label: 'Applying changes…'     },
-                { pct: 90, label: 'Almost done…'          },
+                { pct: 20, label: 'Downloading update...'  },
+                { pct: 45, label: 'Verifying files...'      },
+                { pct: 70, label: 'Applying changes...'     },
+                { pct: 90, label: 'Almost done...'          },
                 { pct: 100, label: 'Complete!'            },
             ];
 
@@ -3108,7 +3201,7 @@
                 clearTimeout(_forceTimer);
                 document.removeEventListener('keydown', _escBlock, true);
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Updating…</span>';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Updating...</span>';
                 progWrap.style.display = 'flex';
 
                 // Animate progress bar through steps
@@ -3521,9 +3614,9 @@
             const banner = document.getElementById('offline-macro-banner');
 
             if (MacroEngine.isOfflineView || !MacroEngine.loaded) {
-                // Show "Reconnecting…" banner immediately so user sees feedback
+                // Show "Reconnecting..." banner immediately so user sees feedback
                 if (banner) {
-                    banner.innerHTML = '<i class="fas fa-spinner fa-spin" style="animation:fa-spin 0.8s linear infinite"></i><span>Reconnecting…</span>';
+                    banner.innerHTML = '<i class="fas fa-spinner fa-spin" style="animation:fa-spin 0.8s linear infinite"></i><span>Reconnecting...</span>';
                     banner.style.background = 'rgba(44, 122, 71, 0.95)';
                     banner.style.boxShadow = '0 8px 25px rgba(44, 122, 71, 0.4)';
                     banner.classList.add('show');
@@ -3631,12 +3724,12 @@
         const tickRipple2    = document.getElementById('tick-ripple-2');
 
         const installSteps = [
-            { pct: 12, label: 'Downloading resources…'  },
-            { pct: 28, label: 'Verifying packages…'      },
-            { pct: 45, label: 'Configuring app data…'    },
-            { pct: 62, label: 'Securing your device…'    },
-            { pct: 80, label: 'Optimising performance…'  },
-            { pct: 95, label: 'Almost there…'            },
+            { pct: 12, label: 'Downloading resources...'  },
+            { pct: 28, label: 'Verifying packages...'      },
+            { pct: 45, label: 'Configuring app data...'    },
+            { pct: 62, label: 'Securing your device...'    },
+            { pct: 80, label: 'Optimising performance...'  },
+            { pct: 95, label: 'Almost there...'            },
             { pct: 100, label: 'Done!'                   },
         ];
 
@@ -4168,7 +4261,7 @@
               lastError = err;
               console.warn(`[Shwari] Retry attempt ${attempt}/${maxAttempts} failed:`, err.message);
               if (attempt < maxAttempts) {
-                const delay = baseDelayMs * Math.pow(2, attempt - 1); // 1.5s, 3s, 6s…
+                const delay = baseDelayMs * Math.pow(2, attempt - 1); // 1.5s, 3s, 6s...
                 await sleep(delay);
               }
             }
@@ -4319,7 +4412,7 @@
           }
 
           AuditLog.record("USER_REGISTERED", { email, device: getDeviceId() });
-          UI.toast("Registration successful! Logging you in…", "success");
+          UI.toast("Registration successful! Logging you in...", "success");
 
           // Brief pause for toast visibility before reload
           setTimeout(() => location.reload(), 800);
@@ -4378,7 +4471,7 @@
             const timeoutHandle = setTimeout(() => {
               if (!loadResolved) {
                 UI.toast(
-                  "Dashboard is taking longer than expected. Retrying…",
+                  "Dashboard is taking longer than expected. Retrying...",
                   "warning"
                 );
                 AuditLog.record("IFRAME_LOAD_TIMEOUT");
@@ -4460,7 +4553,7 @@
           Store.clear();
           AuditLog.clear(); // Also clear the log (privacy compliance)
 
-          UI.toast("Device reset complete. Reloading…", "info");
+          UI.toast("Device reset complete. Reloading...", "info");
           setTimeout(() => location.reload(), 600);
         };
 
