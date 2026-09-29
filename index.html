@@ -2546,6 +2546,7 @@
              * per node. Result: whichever node serves them next, they resume.
              */
             async warmAllNodes(force) {
+                return; // offline snapshot feature removed
                 if (!navigator.onLine) return;
                 const LAST = 'shwari_lb_last_warm';
                 const last = parseInt(localStorage.getItem(LAST) || '0', 10);
@@ -2598,7 +2599,7 @@
             async loadOfflineBlob() {
                 try {
                     // Pull the newest snapshot across ALL nodes, not just the primary key.
-                    const data = (await ShwariDB.getBest()) || (await ShwariDB.get('macro_html'));
+                    const data = null; // offline snapshot feature removed
                     if (data && data.html) {
                         const age = Date.now() - data.timestamp;
                         if (age > 24 * 60 * 60 * 1000) {
@@ -2630,7 +2631,7 @@
                     }
                 } catch(e) {
     console.log("No offline snapshot found, injecting fallback shell...");
-    const fallbackHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"><title>Offline</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111827;color:#fff;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:30px}.icon{width:80px;height:80px;background:linear-gradient(135deg,#1f6e3f,#55d082);border-radius:24px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;font-size:40px}.title{font-size:24px;font-weight:800;color:#55d082;margin-bottom:12px}.msg{font-size:14px;color:#94a3b8;line-height:1.6;max-width:300px;margin-bottom:30px}.loader{width:40px;height:40px;border:3px solid rgba(85,208,130,0.2);border-top:3px solid #55d082;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="icon">🐘</div><div class="title">Offline Mode</div><div class="msg">No cached data yet. Please open the app while online first to enable offline access.</div><div class="loader"></div><script>window.addEventListener('online',()=>window.location.reload());setInterval(()=>{if(navigator.onLine)window.location.reload();},4000);<\/script></body></html>`;
+    const fallbackHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"><title>Offline</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111827;color:#fff;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:30px}.icon{width:80px;height:80px;background:linear-gradient(135deg,#1f6e3f,#55d082);border-radius:24px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;font-size:40px}.title{font-size:24px;font-weight:800;color:#55d082;margin-bottom:12px}.msg{font-size:14px;color:#94a3b8;line-height:1.6;max-width:300px;margin-bottom:30px}.loader{width:40px;height:40px;border:3px solid rgba(85,208,130,0.2);border-top:3px solid #55d082;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="icon">🐘</div><div class="title">Offline Mode</div><div class="msg">You are offline. Please reconnect to the internet to use the app.</div><div class="loader"></div><script>window.addEventListener('online',()=>window.location.reload());setInterval(()=>{if(navigator.onLine)window.location.reload();},4000);<\/script></body></html>`;
     const blob = new Blob([fallbackHtml], { type: 'text/html' });
     this.frame.src = URL.createObjectURL(blob);
     this.loaded = true;
@@ -2639,6 +2640,7 @@
             },
 
             async silentSync() {
+                return; // offline snapshot feature removed
                 try {
                     const res = await fetch(`${this.url}?cb=${Date.now()}&client=shwari_app&${SessionState.params(this.activeNodeIndex)}`);
                     if(res.ok) {
@@ -2733,8 +2735,8 @@
                     }
                     console.log("Macro loaded successfully.");
 
-                    // SAVE TO IDB every time macro loads online — keeps offline snapshot fresh
-                    if (navigator.onLine) {
+                    // offline snapshot feature removed
+                    if (false) {
                         this.silentSync();
                         setTimeout(async () => {
                             try {
@@ -3243,6 +3245,7 @@
         // MAIN INITIALIZATION
         // =========================================
         window.waitingForMacroTransition = false;
+        try { indexedDB.deleteDatabase('ShwariDB'); } catch (e) {}
 
         // WARM UP URL INSTANTLY: Trigger iframe load the exact millisecond the script runs
         MacroEngine.load();
@@ -3250,6 +3253,7 @@
         // PRE-WARM OFFLINE CACHE: Aggressively save macro HTML to IDB on every online load.
         // Ensures offline mode always has a fresh snapshot regardless of SW cache eviction.
         async function _saveIframeToIDB() {
+            return; // offline snapshot feature removed
             if (!navigator.onLine) return;
             try {
                 // Wait for iframe to fully load, then extract its HTML
