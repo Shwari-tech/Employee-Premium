@@ -1813,15 +1813,7 @@
     <img class="splash-center-img" src="https://media.licdn.com/dms/image/v2/D4D03AQErv_z_NGURRA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1672996075297?e=2147483647&v=beta&t=KlV4lX3Wb3kGqBVWLH0Pu3w-XYgXiQFOkp0JGwa9cOU" />
 </div>
 
-    <div id="network-toast">
-        <i class="fas fa-wifi"></i>
-        <span id="toast-message">Checking connection...</span>
-    </div>
     
-    <!-- New Sync and Stale Indicators -->
-    <div id="sync-status-badge">
-        <i class="fas fa-check-circle"></i> Last synced: now
-    </div>
     
     <div id="device-error">
         <div class="error-card">
@@ -1939,16 +1931,6 @@
     </div>
 
     <div class="app" id="app">
-        <div id="stale-warning">
-            <i class="fas fa-triangle-exclamation"></i> Data may be outdated (>24h old)
-        </div>
-        
-        <!-- NEW INSTANT OFFLINE BANNER -->
-        <div id="offline-macro-banner">
-            <div class="offline-pulse"></div>
-            <span>Offline Mode</span>
-        </div>
-
         <iframe id="macro-frame"></iframe>
     </div>
 
@@ -2052,73 +2034,7 @@
     (function () {
         "use strict";
 
-        // =========================================
-        // OFFLINE SYNC - INDEXEDDB WRAPPER
-        // =========================================
-        const ShwariDB = {
-            dbName: 'ShwariDB',
-            storeName: 'macro_cache',
-            init() {
-                return new Promise((resolve, reject) => {
-                    const req = indexedDB.open(this.dbName, 1);
-                    req.onupgradeneeded = (e) => {
-                        e.target.result.createObjectStore(this.storeName, { keyPath: 'id' });
-                    };
-                    req.onsuccess = (e) => resolve(e.target.result);
-                    req.onerror = (e) => reject(e.error);
-                });
-            },
-            async save(html, key) {
-                const db = await this.init();
-                const id = key || 'macro_html';
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(this.storeName, 'readwrite');
-                    const store = tx.objectStore(this.storeName);
-                    store.put({ id: id, html: html, timestamp: Date.now() });
-                    tx.oncomplete = () => resolve();
-                    tx.onerror = (e) => reject(e.error);
-                });
-            },
-            async get(key) {
-                const db = await this.init();
-                const id = (typeof key === 'string' && key) ? key : 'macro_html';
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(this.storeName, 'readonly');
-                    const store = tx.objectStore(this.storeName);
-                    const req = store.get(id);
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = (e) => reject(e.error);
-                });
-            },
-            /** Per-node snapshot — every balanced server keeps its own cache copy. */
-            async saveNode(index, html) {
-                await this.save(html, 'macro_node_' + index);
-                await this.save(html, 'macro_html'); // keep the primary snapshot hot too
-            },
-            /** Returns every stored record so we can pick the freshest across all nodes. */
-            async all() {
-                const db = await this.init();
-                return new Promise((resolve) => {
-                    try {
-                        const tx = db.transaction(this.storeName, 'readonly');
-                        const req = tx.objectStore(this.storeName).getAll();
-                        req.onsuccess = () => resolve(req.result || []);
-                        req.onerror = () => resolve([]);
-                    } catch (e) { resolve([]); }
-                });
-            },
-            /**
-             * Offline resolver: returns the newest usable snapshot from ANY node,
-             * so a user cached on node-3 still works when routed to node-7 offline.
-             */
-            async getBest() {
-                const rows = await this.all();
-                const snaps = rows.filter(r => r && typeof r.html === 'string' && r.html.length > 1000);
-                if (!snaps.length) return null;
-                snaps.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                return snaps[0];
-            }
-        };
+        
 
         // =========================================
         // CROSS-NODE RESUME STATE MANAGER
@@ -2584,7 +2500,7 @@
 
         const MACRO_URL = MACRO_ENDPOINTS[0];
         
-        // Super Stable Macro Engine with Blob Offline Injection
+        // Direct Live URL Macro Engine
         const MacroEngine = {
             url: MACRO_URL,
             activeNodeIndex: null,
@@ -2593,99 +2509,12 @@
             maxRetries: 3,
             loaded: false,
             timeoutId: null,
-            reconnectInterval: null,
-            isOfflineView: false,
-
-            async loadOfflineBlob() {
-                try {
-                    // Pull the newest snapshot across ALL nodes, not just the primary key.
-                    const data = null; // offline snapshot feature removed
-                    if (data && data.html) {
-                        const age = Date.now() - data.timestamp;
-                        if (age > 24 * 60 * 60 * 1000) {
-                            document.getElementById('stale-warning').style.display = 'flex';
-                        }
-                        
-                        const blob = new Blob([data.html], { type: 'text/html' });
-                        const objUrl = URL.createObjectURL(blob);
-                        this.frame.src = objUrl;
-                        this.loaded = true;
-                        this.isOfflineView = true;
-                        
-                        // Show the enhanced animated offline banner
-                        const offlineBanner = document.getElementById('offline-macro-banner');
-                        if (offlineBanner) {
-                            const age = Date.now() - (data.timestamp || 0);
-                            const mins = Math.max(0, Math.floor(age / 60000));
-                            const timeLabel = mins < 1 ? 'now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins/60)}h ago`;
-                            offlineBanner.innerHTML = `<div class="offline-pulse"></div><span>Network · Lost ${timeLabel}</span>`;
-                            offlineBanner.style.background = 'rgba(231, 76, 60, 0.95)';
-                            offlineBanner.style.boxShadow = '0 8px 25px rgba(231, 76, 60, 0.4)';
-                            offlineBanner.classList.add('show');
-                        }
-
-                        if (window.onMacroSuccess) window.onMacroSuccess();
-                        this.updateSyncBadge(data.timestamp, true);
-                    } else {
-                        throw new Error("No offline data available");
-                    }
-                } catch(e) {
-    console.log("No offline snapshot found, injecting fallback shell...");
-    const fallbackHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"><title>Offline</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111827;color:#fff;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:30px}.icon{width:80px;height:80px;background:linear-gradient(135deg,#1f6e3f,#55d082);border-radius:24px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;font-size:40px}.title{font-size:24px;font-weight:800;color:#55d082;margin-bottom:12px}.msg{font-size:14px;color:#94a3b8;line-height:1.6;max-width:300px;margin-bottom:30px}.loader{width:40px;height:40px;border:3px solid rgba(85,208,130,0.2);border-top:3px solid #55d082;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="icon">🐘</div><div class="title">Offline Mode</div><div class="msg">You are offline. Please reconnect to the internet to use the app.</div><div class="loader"></div><script>window.addEventListener('online',()=>window.location.reload());setInterval(()=>{if(navigator.onLine)window.location.reload();},4000);<\/script></body></html>`;
-    const blob = new Blob([fallbackHtml], { type: 'text/html' });
-    this.frame.src = URL.createObjectURL(blob);
-    this.loaded = true;
-    if (window.onMacroSuccess) window.onMacroSuccess();
-}
-            },
-
-            async silentSync() {
-                return; // offline snapshot feature removed
-                try {
-                    const res = await fetch(`${this.url}?cb=${Date.now()}&client=shwari_app&${SessionState.params(this.activeNodeIndex)}`);
-                    if(res.ok) {
-                        const html = await res.text();
-                        await ShwariDB.saveNode(this.activeNodeIndex, html);
-                        this.updateSyncBadge(Date.now(), false);
-                        LoadBalancer.reportLoadSuccess(this.activeNodeIndex);
-                        LoadBalancer.warmAllNodes(false); // keep every other node's cache fresh
-                    }
-                } catch (e) {
-                    console.log("Silent sync fetch skipped or failed.");
-                    LoadBalancer.reportLoadFailure(this.activeNodeIndex);
-                }
-            },
-
-            updateSyncBadge(timestamp, isOffline = false) {
-                // Sync notification hidden
-                return;
-            },
 
             async load() {
                 this.loaded = false;
-                this.isOfflineView = false;
                 clearTimeout(this.timeoutId);
                 console.log(`Loading Macro... Attempt ${this.retries + 1}`);
 
-                // Reset and hide the banner unless it's currently showing the reload animation
-                const offlineBanner = document.getElementById('offline-macro-banner');
-                if (offlineBanner && !offlineBanner.innerHTML.includes('fa-spinner')) {
-                    offlineBanner.classList.remove('show');
-                }
-
-                if (!navigator.onLine) {
-                    await this.loadOfflineBlob();
-                    return;
-                }
-                
-                // OFFLINE INTERCEPT: Never set live URL if offline — serve IDB snapshot directly
-                if (!navigator.onLine) {
-                    await this.loadOfflineBlob();
-                    return;
-                }
-
-                // LOAD BALANCING: resolve which of the 10 nodes to hit this time,
-                // rerouting away from any currently-blacklisted (overloaded/failing) node.
                 const resolved = await LoadBalancer.resolveActiveEndpoint();
                 this.url = resolved.url;
                 this.activeNodeIndex = resolved.index;
@@ -2696,68 +2525,18 @@
                 this.frame.src = `${this.url}?cb=${Date.now()}&client=shwari_app&${SessionState.params(resolved.index)}`;
 
                 this.frame.onerror = () => {
-                    console.warn("Iframe onerror fired — loading offline blob.");
                     LoadBalancer.reportLoadFailure(this.activeNodeIndex);
                     clearTimeout(this.timeoutId);
-                    this.loadOfflineBlob();
+                    this.handleTimeout();
                 };
                 
                 this.timeoutId = setTimeout(() => this.handleTimeout(), 15000);
 
                 this.frame.onload = () => {
-                    // Detect browser error pages (net::ERR_* shown inside iframe)
-                    let isErrorPage = false;
-                    try {
-                        const loc = this.frame.contentWindow && this.frame.contentWindow.location;
-                        if (loc && (loc.href === 'about:blank' || loc.href.startsWith('chrome-error://') || loc.href.startsWith('data:text/html'))) {
-                            isErrorPage = true;
-                        }
-                    } catch(e) {
-                        isErrorPage = false;
-                    }
-
-                    if (isErrorPage) {
-                        console.warn("Iframe loaded an error page — falling back to offline blob.");
-                        this.loadOfflineBlob();
-                        return;
-                    }
-
                     this.loaded = true;
-                    this.isOfflineView = false;
                     clearTimeout(this.timeoutId);
                     LoadBalancer.reportLoadSuccess(this.activeNodeIndex);
-                    
-                    if (offlineBanner) offlineBanner.classList.remove('show');
-
-                    if (this.reconnectInterval) {
-                        clearInterval(this.reconnectInterval);
-                        this.reconnectInterval = null;
-                    }
                     console.log("Macro loaded successfully.");
-
-                    // offline snapshot feature removed
-                    if (false) {
-                        this.silentSync();
-                        setTimeout(async () => {
-                            try {
-                                const res = await fetch(`${this.url}?cb=${Date.now()}&client=shwari_offline_snap`);
-                                if (res.ok) {
-                                    const html = await res.text();
-                                    const isReal = html.length > 1000 &&
-                                        !html.toLowerCase().includes('accounts.google.com') &&
-                                        !html.toLowerCase().includes('sign in');
-                                    if (isReal) {
-                                        await ShwariDB.save(html);
-                                        console.log('[IDB] Offline snapshot saved —', Math.round(html.length/1024), 'KB');
-                                        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                                            navigator.serviceWorker.controller.postMessage({ type: 'FORCE_MACRO_CACHE', html });
-                                        }
-                                    }
-                                }
-                            } catch(e) { console.log('[IDB] Snapshot save skipped:', e.message); }
-                        }, 3000);
-                    }
-                    
                     if (window.onMacroSuccess) window.onMacroSuccess();
                 };
             },
@@ -2765,26 +2544,13 @@
             handleTimeout() {
                 if (this.loaded) return;
                 console.warn("Macro load timeout. Retrying...");
-
-                // Real timeout on this node = strong signal it's overloaded/down.
                 LoadBalancer.reportLoadFailure(this.activeNodeIndex);
-
                 this.retries++;
                 
                 if (this.retries <= this.maxRetries) {
                     setTimeout(() => this.load(), 2000 * this.retries);
                 } else {
                     console.error("Macro failed to load after maximum retries.");
-                    this.loadOfflineBlob(); // Display offline fallback on max failures
-                    
-                    if (!this.reconnectInterval) {
-                        this.reconnectInterval = setInterval(() => {
-                            if (navigator.onLine && !this.loaded) {
-                                this.retries = 0;
-                                this.load();
-                            }
-                        }, 10000);
-                    }
                 }
             }
         };
@@ -3245,72 +3011,9 @@
         // MAIN INITIALIZATION
         // =========================================
         window.waitingForMacroTransition = false;
-        try { indexedDB.deleteDatabase('ShwariDB'); } catch (e) {}
 
         // WARM UP URL INSTANTLY: Trigger iframe load the exact millisecond the script runs
         MacroEngine.load();
-
-        // PRE-WARM OFFLINE CACHE: Aggressively save macro HTML to IDB on every online load.
-        // Ensures offline mode always has a fresh snapshot regardless of SW cache eviction.
-        async function _saveIframeToIDB() {
-            return; // offline snapshot feature removed
-            if (!navigator.onLine) return;
-            try {
-                // Wait for iframe to fully load, then extract its HTML
-                const frame = document.getElementById('macro-frame');
-                let html = null;
-
-                // Method 1: Try reading from already-loaded iframe (cross-origin safe attempt)
-                try {
-                    if (frame && frame.contentDocument && frame.contentDocument.documentElement) {
-                        html = frame.contentDocument.documentElement.outerHTML;
-                    }
-                } catch(e) { /* cross-origin — expected */ }
-
-                // Method 2: Fresh fetch (most reliable — always gets latest)
-                // Uses whichever node the load balancer currently has active for this device.
-                if (!html || html.length < 1000) {
-                    const res = await fetch(`${MacroEngine.url}?cb=${Date.now()}&client=shwari_offline_save&${SessionState.params(MacroEngine.activeNodeIndex || 0)}`);
-                    if (res.ok) html = await res.text();
-                }
-
-                if (!html || html.length < 1000) return;
-
-                const isReal = !html.toLowerCase().includes('accounts.google.com') &&
-                               !html.toLowerCase().includes('sign in') &&
-                               !html.toLowerCase().includes('error 404');
-
-                if (isReal) {
-                    await ShwariDB.saveNode(MacroEngine.activeNodeIndex || 0, html);
-                    console.log('[OfflineSave] Macro snapshot saved for node', MacroEngine.activeNodeIndex, '—', Math.round(html.length/1024), 'KB');
-
-                    // Also tell the SW to cache it via message bridge
-                    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.controller.postMessage({
-                            type: 'FORCE_MACRO_CACHE',
-                            html: html
-                        });
-                    }
-                }
-            } catch(e) {
-                console.log('[OfflineSave] Skipped —', e.message);
-            }
-        }
-
-        // Save immediately on load, and again every 10 minutes while online
-        if (navigator.onLine) {
-            setTimeout(_saveIframeToIDB, 4000);
-            setInterval(() => {
-                if (navigator.onLine) _saveIframeToIDB();
-            }, 10 * 60 * 1000);
-        }
-
-        // Also save after every successful macro load (most reliable trigger)
-        const _origOnMacroSuccess = window.onMacroSuccess;
-        window.onMacroSuccess = function() {
-            if (_origOnMacroSuccess) _origOnMacroSuccess.apply(this, arguments);
-            if (navigator.onLine) setTimeout(_saveIframeToIDB, 2000);
-        };
 
         async function initializeApp() {
             initSuperResponsiveButtons();
@@ -3565,170 +3268,7 @@
             }, 4000);
         };
 
-        /* =====================================================
-           NETWORK CONNECTIVITY DETECTION & ERROR HANDLING
-           ====================================================== */
         
-        const networkToast = document.getElementById('network-toast');
-        const toastMessage = document.getElementById('toast-message');
-        let wasOffline = false;
-        let isCheckingConnection = false;
-        let autoReloadTimer = null;
-
-        const showToast = (message, isOnline) => {
-            toastMessage.textContent = message;
-            networkToast.className = isOnline ? 'online' : 'offline';
-            networkToast.classList.add('show');
-            
-            setTimeout(() => {
-                networkToast.classList.remove('show');
-            }, 3000);
-        };
-
-        const checkConnectivity = async () => {
-            if (isCheckingConnection) return navigator.onLine;
-            isCheckingConnection = true;
-
-            const probes = [
-                'https://www.google.com/favicon.ico',
-                'https://www.cloudflare.com/cdn-cgi/trace',
-                'https://httpbin.org/get',
-            ];
-
-            for (const url of probes) {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 4000);
-                    await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
-                    clearTimeout(timeoutId);
-                    isCheckingConnection = false;
-                    return true;
-                } catch (_) { /* try next probe */ }
-            }
-
-            isCheckingConnection = false;
-            return false;
-        };
-
-        const handleOnline = async () => {
-            const isConnected = await checkConnectivity();
-            if (!isConnected) return; // Lie-fi guard — browser says online but can't reach internet
-
-            if (!wasOffline) {
-                // Not coming back from offline — just do a silent background sync
-                if (MacroEngine.loaded && !MacroEngine.isOfflineView) {
-                    MacroEngine.silentSync();
-                }
-                return;
-            }
-
-            // ── COMING BACK FROM OFFLINE ──────────────────────────────────
-            wasOffline = false;
-            if (autoReloadTimer) { clearInterval(autoReloadTimer); autoReloadTimer = null; }
-
-            showToast('Back online!', true);
-            console.log('[Network] Restored — triggering macro reload');
-
-            const banner = document.getElementById('offline-macro-banner');
-
-            if (MacroEngine.isOfflineView || !MacroEngine.loaded) {
-                // Show "Reconnecting..." banner immediately so user sees feedback
-                if (banner) {
-                    banner.innerHTML = '<i class="fas fa-spinner fa-spin" style="animation:fa-spin 0.8s linear infinite"></i><span>Reconnecting...</span>';
-                    banner.style.background = 'rgba(44, 122, 71, 0.95)';
-                    banner.style.boxShadow = '0 8px 25px rgba(44, 122, 71, 0.4)';
-                    banner.classList.add('show');
-                }
-
-                // Short delay lets the UI settle before hitting the network
-                setTimeout(() => {
-                    MacroEngine.retries = 0;
-                    MacroEngine.loaded  = false;
-                    MacroEngine.load();
-                }, 600);
-            } else {
-                // Macro already showing live — just sync data silently
-                if (banner) banner.classList.remove('show');
-                MacroEngine.silentSync();
-            }
-        };
-
-        const handleOffline = () => {
-            if (wasOffline) return; // Already handling offline state
-            wasOffline = true;
-            showToast('Connection lost', false);
-            console.log('[Network] Went offline');
-
-            // Show the offline banner inside the app immediately if visible
-            const banner = document.getElementById('offline-macro-banner');
-            if (banner && document.getElementById('app').classList.contains('active')) {
-                banner.innerHTML = '<div class="offline-pulse"></div><span>Offline Mode</span>';
-                banner.style.background = 'rgba(231, 76, 60, 0.95)';
-                banner.style.boxShadow = '0 8px 25px rgba(231, 76, 60, 0.4)';
-                banner.classList.add('show');
-            }
-
-            // Poll every 3 s for actual connectivity (not just navigator.onLine)
-            if (!autoReloadTimer) {
-                autoReloadTimer = setInterval(async () => {
-                    if (navigator.onLine) {
-                        const isConnected = await checkConnectivity();
-                        if (isConnected) {
-                            clearInterval(autoReloadTimer);
-                            autoReloadTimer = null;
-                            handleOnline();
-                        }
-                    }
-                }, 3000);
-            }
-        };
-
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-
-        // Heartbeat: only runs probe when browser already thinks we're offline,
-        // preventing unnecessary fetches every 5 s when everything is fine.
-        setInterval(async () => {
-            if (!navigator.onLine && !autoReloadTimer) {
-                handleOffline(); // Catches cases where the 'offline' event was missed
-            }
-        }, 5000);
-
-        window.addEventListener('load', async () => {
-            if (!navigator.onLine) {
-                handleOffline();
-                return;
-            }
-            // Check actual reachability, not just the OS flag
-            const isConnected = await checkConnectivity();
-            if (!isConnected) {
-                handleOffline();
-            } else if (MacroEngine.loaded && !MacroEngine.isOfflineView) {
-                // We're online and showing live content — do a fresh silent sync
-                MacroEngine.silentSync();
-            }
-        });
-
-        document.addEventListener('visibilitychange', async () => {
-            if (document.visibilityState !== 'visible') return;
-
-            if (!navigator.onLine) {
-                handleOffline();
-                return;
-            }
-
-            const isConnected = await checkConnectivity();
-
-            if (!isConnected) {
-                handleOffline();
-            } else if (wasOffline) {
-                // Came back to the tab AND we were offline before — reconnect fully
-                handleOnline();
-            } else if (MacroEngine.loaded && !MacroEngine.isOfflineView) {
-                // Normal foreground — silently sync data in the background
-                MacroEngine.silentSync();
-            }
-        });
 
         /* =====================================================
            INSTALL PROGRESS SCREEN
@@ -3919,18 +3459,9 @@
         checkIfAppAlreadyInstalled();
 
         // Warm & cache every deployment shortly after boot, then hourly.
-        setTimeout(() => LoadBalancer.warmAllNodes(true), 8000);
-        setInterval(() => { if (navigator.onLine) LoadBalancer.warmAllNodes(false); }, 60 * 60 * 1000);
 
-        // =========================================
-        // NOTIFICATION BAR TOUCH DISMISS
-        // =========================================
-        const toastEl = document.getElementById('network-toast');
-        toastEl.style.cursor = 'pointer';
-        toastEl.addEventListener('click', () => toastEl.classList.remove('show'));
-        toastEl.addEventListener('touchstart', (e) => {
-            toastEl.classList.remove('show');
-        }, { passive: true });
+
+        
 
     })();
     </script>
@@ -4453,16 +3984,7 @@
             return;
           }
 
-          // ── Offline Guard ─────────────────────────────────────────
-          if (!navigator.onLine) {
-            BruteGuard.recordFailedAttempt(); // Count offline attempts too
-            UI.toast(
-              "You are offline. Please connect to the internet to access the dashboard.",
-              "warning"
-            );
-            AuditLog.record("CONTINUE_BLOCKED_OFFLINE");
-            return;
-          }
+          
 
           // ── Create Session Token ──────────────────────────────────
           const token = Session.create();
@@ -4631,30 +4153,7 @@
           return diag;
         };
 
-        // ─────────────────────────────────────────────────────────────
-        //  18. NETWORK STATUS LISTENERS — React to Connection Changes
-        //  Informs the user immediately when connectivity changes
-        // ─────────────────────────────────────────────────────────────
-
-        window.addEventListener("offline", () => {
-          console.warn("[Shwari] Device went offline.");
-          AuditLog.record("NETWORK_WENT_OFFLINE");
-          UI.toast("You are now offline. Some features may be unavailable.", "warning");
-
-          // Visually mark the app as offline if element exists
-          const offlineIndicator = UI.get("offline-indicator");
-          if (offlineIndicator) offlineIndicator.classList.remove("hidden");
-        });
-
-        window.addEventListener("online", () => {
-          console.info("[Shwari] Device is back online.");
-          AuditLog.record("NETWORK_RESTORED");
-          UI.toast("Connection restored. You're back online.", "success");
-
-          // Hide the offline indicator
-          const offlineIndicator = UI.get("offline-indicator");
-          if (offlineIndicator) offlineIndicator.classList.add("hidden");
-        });
+        
 
         // ─────────────────────────────────────────────────────────────
         //  19. VISIBILITY API — Auto-refresh Session on Tab Focus
