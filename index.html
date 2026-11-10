@@ -1,16 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<style>
+html { -webkit-text-size-adjust: none !important; -moz-text-size-adjust: none !important; text-size-adjust: none !important; }
+body { -webkit-text-size-adjust: none !important; text-size-adjust: none !important; }
+</style>
+<script>
+/* undo Android "Font size" / "Display size" scaling */
+(function () {
+  function fix() {
+    var t = document.createElement('div');
+    t.style.cssText = 'position:absolute;visibility:hidden;font-size:100px;line-height:1;padding:0;margin:0';
+    t.textContent = 'M';
+    document.body.appendChild(t);
+    var real = t.getBoundingClientRect().height;   // height of a 100px font after phone scaling
+    document.body.removeChild(t);
+    var ratio = real / 100;
+    if (ratio > 1.02 || ratio < 0.98) {
+      document.documentElement.style.fontSize = (16 / ratio) + 'px';
+      document.documentElement.style.zoom = '';
+    }
+  }
+  if (document.body) fix(); else document.addEventListener('DOMContentLoaded', fix);
+  window.addEventListener('resize', fix);
+})();
+</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="<strong><strong>Shwari | Finance</strong></strong>">
+    <meta name="apple-mobile-web-app-title" content="Shwari | Finance">
     
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
-    <title><strong><strong>Shwari | Finance</strong></strong> · Digital Assimilation</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -38,7 +62,7 @@
             min-height: calc(var(--vh, 1vh) * 100);
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             overflow: hidden; position: relative; perspective: 1200px;
-            -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%;
+            -webkit-text-size-adjust: none !important; -moz-text-size-adjust: none !important; text-size-adjust: none !important;
             background-color: var(--bg-dark);
             padding: 0; margin: 0;
             touch-action: manipulation;
@@ -680,7 +704,7 @@
             
             .continue-footer {
     padding: 40px 20px 40px; text-align: center;
-    background: linear-gradient(to top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 40%, rgba(255,255,255,0) 100%); !important;
+    background: linear-gradient(to top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 40%, rgba(255,255,255,0) 100%) !important;
             }
 
             #auth-portal { background: #000000 !important; }
@@ -1669,6 +1693,11 @@
 
     </style>
 <style>
+/* ===== FIXED APP SIZE: ignore phone font/display settings ===== */
+html { -webkit-text-size-adjust: none !important; -moz-text-size-adjust: none !important; text-size-adjust: none !important; font-size: 16px !important; }
+body, input, button, textarea, select { -webkit-text-size-adjust: none !important; text-size-adjust: none !important; }
+</style>
+<style>
 /* EMPLOYEE RECORDS UPDATE AD (instant on launch) */
 #ea-overlay{position:fixed;inset:0;z-index:300000;display:flex;flex-direction:column;background:#fff;padding-top:env(safe-area-inset-top);font-family:'Inter',system-ui,-apple-system,sans-serif;opacity:1;transition:opacity .35s ease;overflow:hidden}
 #ea-overlay.ea-hide{opacity:0;pointer-events:none}
@@ -1701,6 +1730,50 @@
 .ea-btn:active{transform:scale(.97)}
 .ea-primary{background:linear-gradient(270deg,#2c7a47,#005c4b,#1f6e3f);background-size:400% 400%;color:#fff;border:none;box-shadow:0 8px 22px rgba(44,122,71,.32);animation:colorShift 6s ease infinite}
 .ea-skip{background:#f1f5f9;color:#475569;border:none}
+</style>
+<style>
+/* LOADER: Coat of Arms bouncing logo */
+#ig-loader .ig-icon-wrap{
+    width:min(62vw,260px);height:auto;background:none;border-radius:0;box-shadow:none;
+    font-size:52px;color:#2c7a47;
+    animation:igBounce 1.2s cubic-bezier(.28,.84,.42,1) infinite;
+}
+#ig-loader .ig-icon-wrap img{width:100%;height:auto;max-height:42vh;object-fit:contain;display:block}
+@keyframes igBounce{
+    0%,100%{transform:translateY(0) scale(1,1)}
+    45%{transform:translateY(-26px) scale(1,1.03)}
+    60%{transform:translateY(-26px) scale(1,1.03)}
+    88%{transform:translateY(0) scale(1.05,.95)}
+}
+@media (prefers-reduced-motion:reduce){#ig-loader .ig-icon-wrap{animation:none}}
+
+/* LOADER FOOTER: small icon + 2-line name, bottom right */
+#ig-loader .ig-from{
+    position:fixed;
+    left:50%;right:auto;
+    transform:translateX(-50%);
+    bottom:max(22px,env(safe-area-inset-bottom));
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    margin:0;letter-spacing:0;text-transform:none;
+    white-space:nowrap;
+}
+#ig-loader .ig-sep{
+    display:flex;flex-direction:column;gap:3px;width:3px;height:52px;flex-shrink:0;
+}
+#ig-loader .ig-sep i{display:block;width:100%;flex:1;border-radius:1px}
+#ig-loader .ig-sep i:nth-child(1){background:#000000}
+#ig-loader .ig-sep i:nth-child(2){background:#007A33}
+#ig-loader .ig-sep i:nth-child(3){background:#C8102E}
+#ig-loader .ig-from-ic{
+    width:52px;height:52px;object-fit:contain;border-radius:0;display:block;flex-shrink:0;background:none;
+}
+#ig-loader .ig-from-tx{white-space:nowrap;}
+#ig-loader .ig-from-tx{
+    font-family:'Inter',sans-serif;
+    font-size:10px;line-height:1.25;font-weight:800;
+    letter-spacing:2px;text-transform:uppercase;text-align:left;
+    color:rgba(44,122,71,.75);
+}
 </style>
 <base target="_blank">
 <link rel="preload" as="image" href="https://mmenterprises.co.in/wp-content/uploads/2023/05/employer-of-records.jpg">
@@ -1781,8 +1854,12 @@
 
 <!-- INSTAGRAM-STYLE LOADER -->
     <div id="ig-loader">
-        <div class="ig-icon-wrap"><i class="fas fa-elephant"></i></div>
-        <p class="ig-from"> <span><strong>Shwari | Finance</strong></span></p>
+        <div class="ig-icon-wrap"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTE6xsKtHURCKhxCGrxc6_Cpbnm-Rs9kwhH30M1ze1_xA&s=10" alt="Shwari" referrerpolicy="no-referrer" decoding="async" fetchpriority="high" onerror="this.parentNode.innerHTML='<i class=&quot;fas fa-paw&quot;></i>'"></div>
+        <div class="ig-from">
+            <img class="ig-from-ic" src="https://i0.wp.com/www.paukwa.or.ke/wp-content/uploads/2018/12/Coat-of-Arms-ArkAfrica-1-scaled.jpg?ssl=1" alt="" referrerpolicy="no-referrer" decoding="async" onerror="this.style.display='none'">
+            <span class="ig-sep"><i></i><i></i><i></i></span>
+            <span class="ig-from-tx">Shwari Finance | 2026</span>
+        </div>
     </div>
 
     <div class="bg-layer" id="splash-layer" style="display:none!important;">
@@ -1908,7 +1985,7 @@
         <div class="continue-footer">
             <div id="elephant-gate" class="elephant-gate">
                 <div class="unlock-ring"></div>
-                <i class="fas fa-elephant elephant-icon"></i>
+                <i class="fas fa-paw elephant-icon"></i>
             </div>
             
             <div id="employee-info" class="employee-info">
@@ -1941,7 +2018,7 @@
         <div class="install-particle ip4"></div>
 
         <div class="install-app-icon">
-            <i class="fas fa-elephant"></i>
+            <i class="fas fa-paw"></i>
         </div>
 
         <p class="install-title">Installing <strong><strong>Shwari | Finance</strong></strong></p>
@@ -1994,7 +2071,7 @@
     <div id="post-install-guide">
         <div class="guide-card">
             <div class="guide-icon">
-                <i class="fas fa-elephant"></i>
+                <i class="fas fa-paw"></i>
             </div>
             <h2>Installation Complete!</h2>
             <p class="guide-subtitle">Follow these steps to start using <strong><strong>Shwari | Finance</strong></strong></p>
@@ -3426,7 +3503,7 @@
         };
 
         document.getElementById('open-shwari-btn').addEventListener('click', function() {
-            alert('Please close this browser tab and launch <strong><strong>Shwari | Finance</strong></strong> from the green elephant icon on your home screen.');
+            alert('Please close this browser tab and launch Shwari | Finance from the green elephant icon on your home screen.');
             window.close();
         });
 
@@ -3485,7 +3562,7 @@
         const APP_MACRO_URL = "https://script.google.com/macros/s/AKfycbyfQVWk7c6bCz7yj9rwC5iL2ZTx7erP_w0tdm4ukyKOrQtaFRFL9adQBrV5A3edvvSO/exec";
 
         const CONFIG = {
-          APP_NAME: "<strong><strong>Shwari | Finance</strong></strong>",
+          APP_NAME: "Shwari | Finance",
           STORAGE_PREFIX: "shwari_",       // Namespace all storage keys
           SESSION_TTL_MS: 8 * 60 * 60 * 1000, // 8-hour session expiry
           MAX_LOGIN_ATTEMPTS: 5,           // Lockout after 5 failed continues
@@ -4231,7 +4308,7 @@
 
         <!-- Full Width Image Section -->
         <div style="width:100%;flex:0 0 45%;max-height:45vh;overflow:hidden;position:relative;background:#f8fafc;">
-            <img src="https://img.magnific.com/free-vector/salary-payment-concept-illustration-with-man-get-income-his-job_513217-187.jpg?semt=ais_hybrid&w=740&q=80"Payment notification" style="width:100%;height:100%;object-fit:cover;object-position:center top;" />
+            <img src="https://img.magnific.com/free-vector/salary-payment-concept-illustration-with-man-get-income-his-job_513217-187.jpg?semt=ais_hybrid&w=740&q=80" alt="Payment notification" style="width:100%;height:100%;object-fit:cover;object-position:center top;" />
             <!-- Fade gradient to blend image into the white bottom half -->
             <div style="position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);"></div>
         </div>
