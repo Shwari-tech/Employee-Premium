@@ -30,13 +30,15 @@ body { -webkit-text-size-adjust: none !important; text-size-adjust: none !import
     <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Shwari | Finance">
     
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#ffffff">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+    <meta name="color-scheme" content="only light">
+<meta name="supported-color-schemes" content="light">
+<meta name="theme-color" content="#ffffff">
     
     <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     
     <style>
@@ -1777,6 +1779,43 @@ body, input, button, textarea, select { -webkit-text-size-adjust: none !importan
 </style>
 <base target="_blank">
 <link rel="preload" as="image" href="https://mmenterprises.co.in/wp-content/uploads/2023/05/employer-of-records.jpg">
+<style id="force-white">
+:root, html, body, iframe, input, button, textarea, select { color-scheme: only light !important; }
+
+html, body, .app, iframe, .bg-layer, #ig-loader, #ea-overlay, #payment-ad-overlay,
+#auth-portal, body.keyboard-open #auth-portal, #device-error, #forcedInstall,
+#install-progress-screen, #storage-permission-modal, #duplicate-app-screen,
+#already-installed-blocker, #post-install-guide, .continue-footer {
+    background-color: #ffffff !important;
+    background-image: none !important;
+}
+.error-card, .install-card, .duplicate-card, .blocker-card {
+    background: #ffffff !important;
+    box-shadow: 0 12px 35px rgba(15,23,42,.12) !important;
+}
+.error-card p, .install-card p, .duplicate-card p, .blocker-card p,
+.duplicate-info-item, .blocker-info-item, .install-status-text { color: #475569 !important; }
+.install-title, .dept-title, .medium-font { color: #0a2e16 !important; }
+.install-track { background: #e2efe7 !important; }
+
+#network-toast { background: #ffffff !important; color: #0f172a !important; border-color: #e2e8f0 !important; }
+#force-update-modal { background: rgba(255,255,255,.97) !important; }
+#fu-card { background: #ffffff !important; box-shadow: 0 20px 50px rgba(15,23,42,.18) !important; }
+#fu-title { color: #0f172a !important; }
+#fu-desc, .fu-feature, #fu-footer-note { color: #475569 !important; }
+#fu-features { background: #f8fafc !important; border-color: #e2e8f0 !important; }
+
+/* iPhone only */
+@supports (-webkit-touch-callout: none) {
+    .app {
+        top: env(safe-area-inset-top) !important;
+        bottom: env(safe-area-inset-bottom) !important;
+        height: auto !important;
+        overflow: hidden;
+    }
+    input, select, textarea { font-size: 16px !important; }  /* stops zoom on typing */
+}
+</style>
 </head>
 <body>
 
@@ -1847,7 +1886,7 @@ body, input, button, textarea, select { -webkit-text-size-adjust: none !importan
         ov.classList.add('ea-hide');
         setTimeout(function(){ ov.remove(); }, 400);
         var appActive = document.getElementById('app').classList.contains('active');
-        setBar(appActive ? '#111827' : '#ffffff');   // back to normal colours
+        setBar('#ffffff');   // back to normal colours
     };
 })();
 </script>
@@ -2178,6 +2217,7 @@ body, input, button, textarea, select { -webkit-text-size-adjust: none !importan
                 window.addEventListener('message', (ev) => {
                     const d = ev && ev.data;
                     if (!d || d.type !== 'SHWARI_STATE') return;
+                if (!/^https:\/\/[a-z0-9.-]+\.googleusercontent\.com$/i.test(ev.origin)) return;
                     this.write({
                         route:   d.route || this.read().route,
                         scrollY: d.scrollY || 0,
@@ -3323,7 +3363,7 @@ body, input, button, textarea, select { -webkit-text-size-adjust: none !importan
             // Reset theme-color meta (skip if payment ad is visible)
             if (!window._adVisible) {
                 document.querySelectorAll('meta[name="theme-color"]').forEach(m =>
-                    m.setAttribute('content', '#111827')
+                    m.setAttribute('content', '#ffffff')
                 );
             }
 
@@ -3342,7 +3382,7 @@ body, input, button, textarea, select { -webkit-text-size-adjust: none !importan
                 if (window.checkAndRunTransition) {
                     window.checkAndRunTransition();
                 }
-            }, 4000);
+            }, 300);
         };
 
         
@@ -4344,7 +4384,7 @@ body, input, button, textarea, select { -webkit-text-size-adjust: none !importan
             overlay.style.display = 'none';
             var metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
             metaThemeColors.forEach(function(meta) {
-                meta.setAttribute("content", "#111827");
+                meta.setAttribute("content", "#ffffff");
             });
         }, 400);
     }
@@ -4397,5 +4437,18 @@ body, input, button, textarea, select { -webkit-text-size-adjust: none !importan
     })();
     </script>
 
+<div id="ios-hint" style="display:none;position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:150000;background:#fff;color:#0f172a;border:1px solid #bbf7d0;border-radius:18px;padding:16px;box-shadow:0 10px 30px rgba(15,23,42,.18);font:14px/1.5 system-ui,sans-serif;text-align:center;">
+    <strong>Install on iPhone</strong><br>
+    Tap the <b>Share</b> button, then <b>Add to Home Screen</b>.<br>
+    <button type="button" onclick="this.parentNode.style.display='none'" style="margin-top:10px;padding:10px 24px;border:0;border-radius:12px;background:#1f6e3f;color:#fff;font-weight:700;">OK</button>
+</div>
+<script>
+(function () {
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var installed = window.navigator.standalone === true ||
+                    window.matchMedia('(display-mode: standalone)').matches;
+    if (isIOS && !installed) document.getElementById('ios-hint').style.display = 'block';
+})();
+</script>
 </body>
 </html>
