@@ -1816,6 +1816,14 @@ html, body, .app, iframe, .bg-layer, #ig-loader, #ea-overlay, #payment-ad-overla
     input, select, textarea { font-size: 16px !important; }  /* stops zoom on typing */
 }
 </style>
+<style id="hide-install">
+/* Hide every PWA install screen and hint */
+#forcedInstall,
+#install-progress-screen,
+#post-install-guide,
+#already-installed-blocker,
+#ios-hint { display: none !important; }
+</style>
 </head>
 <body>
 
@@ -4399,6 +4407,8 @@ html, body, .app, iframe, .bg-layer, #ig-loader, #ea-overlay, #payment-ad-overla
     <span style="position:absolute;left:50%;bottom:-36px;width:60px;height:60px;margin-left:-30px;background:#10b981;border-radius:12px;transform:rotate(45deg);pointer-events:none;"></span>
     <span style="position:absolute;right:-26px;bottom:-26px;width:72px;height:72px;background:#10b981;border-radius:14px;transform:rotate(-20deg);pointer-events:none;"></span>
 </div>
+<script>
+    function dismissAd() {
         window._adVisible = false;
         var overlay = document.getElementById('payment-ad-overlay');
         overlay.style.opacity = '0';
