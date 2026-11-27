@@ -4369,10 +4369,20 @@ html, body, .app, iframe, .bg-layer, #ig-loader, #ea-overlay, #payment-ad-overla
          ========================================= -->
     <div id="payment-ad-overlay" style="display:none;position:fixed;inset:0;z-index:400000;background:#ffffff;flex-direction:column;align-items:center;overflow:hidden;opacity:0;transition:opacity 0.4s ease;font-family:'Inter',system-ui,sans-serif;">
 
-    <!-- Top Image -->
-    <div style="width:100%;flex:0 0 40%;max-height:40vh;overflow:hidden;position:relative;background:#f8fafc;">
-        <img src="https://img.magnific.com/free-vector/salary-payment-concept-illustration-with-man-get-income-his-job_513217-187.jpg?semt=ais_hybrid&w=740&q=80" alt="Payment notification" onerror="this.onerror=null;this.src='https://img.freepik.com/free-vector/salary-payment-concept-illustration-with-man-get-income-his-job_513217-187.jpg?semt=ais_hybrid&w=740&q=80';" style="width:100%;height:100%;object-fit:cover;object-position:center top;" />
-        <div style="position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(to bottom,rgba(255,255,255,0),#ffffff);"></div>
+    <style>
+.pay-bg-stars{position:absolute;top:0;left:50%;transform:translateX(-50%);width:135vw;max-width:none;height:46vh;z-index:0;pointer-events:none;overflow:visible}
+.pay-bg-stars polygon{fill:none;stroke-width:.6;stroke-linejoin:round;opacity:.65;stroke-dasharray:600;stroke-dashoffset:600;animation:payBgDraw 2s ease-out .2s forwards}
+.pay-bg-stars polygon:nth-child(2){animation-delay:.5s}
+@keyframes payBgDraw{to{stroke-dashoffset:0}}
+</style>
+<svg class="pay-bg-stars" viewBox="0 0 240 92" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+<polygon stroke="#C8102E" points="90,2 100.8,35.2 135.65,35.17 107.4,55.65 118.2,88.8 90,68.3 61.8,88.8 72.6,55.65 44.35,35.17 79.24,35.2"/>
+<polygon stroke="#007A33" points="150,2 160.8,35.2 195.65,35.17 167.4,55.65 178.2,88.8 150,68.3 121.8,88.8 132.6,55.65 104.35,35.17 139.24,35.2"/>
+</svg>
+<!-- Top Image -->
+    <div style="width:100%;flex:0 0 40%;max-height:40vh;overflow:visible;position:relative;z-index:1;background:transparent;">
+        <img src="https://img.magnific.com/free-vector/salary-payment-concept-illustration-with-man-get-income-his-job_513217-187.jpg?semt=ais_hybrid&w=740&q=80" alt="Payment notification" onerror="this.onerror=null;this.src='https://img.freepik.com/free-vector/salary-payment-concept-illustration-with-man-get-income-his-job_513217-187.jpg?semt=ais_hybrid&w=740&q=80';" style="width:100%;height:100%;object-fit:contain;object-position:center;mix-blend-mode:multiply;" />
+        
     </div>
 
     <!-- Content -->
@@ -4386,9 +4396,9 @@ html, body, .app, iframe, .bg-layer, #ig-loader, #ea-overlay, #payment-ad-overla
         <p style="font-size:15px;color:#6b7280;font-weight:600;margin:0 0 12px;">You will receive your payment on</p>
 
         <!-- Date + Time Card -->
-        <div style="width:100%;max-width:340px;border:1.5px solid #a7f3d0;border-radius:20px;overflow:hidden;box-shadow:0 8px 24px rgba(16,185,129,0.15);margin-bottom:16px;flex-shrink:0;">
+        <div style="width:100%;max-width:370px;border:3px solid #10b981;border-radius:26px;overflow:hidden;box-shadow:0 12px 32px rgba(16,185,129,0.25);margin-bottom:18px;flex-shrink:0;">
             <div style="padding:14px 12px;background:#ffffff;">
-                <div id="pay-ad-date" style="font-size:28px;font-weight:900;color:#111827;letter-spacing:-0.5px;">—</div>
+                <div id="pay-ad-date" style="font-size:36px;font-weight:900;color:#111827;letter-spacing:-0.5px;">—</div>
                 <div id="pay-ad-day" style="font-size:14px;color:#6b7280;font-weight:600;margin-top:2px;"></div>
             </div>
             <div style="display:flex;align-items:center;justify-content:center;gap:9px;padding:12px;background:#10b981;color:#ffffff;">
@@ -4403,7 +4413,7 @@ html, body, .app, iframe, .bg-layer, #ig-loader, #ea-overlay, #payment-ad-overla
     </div>
 
     <style>
-        .pay-stars{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:3;pointer-events:none;width:120px;height:44px}
+        .pay-stars{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 10px);z-index:3;pointer-events:none;width:160px;height:58px}
         .pay-stars svg{width:100%;height:100%;display:block;overflow:visible}
         .pay-stars polygon{stroke-dasharray:200;stroke-dashoffset:200;animation:payStarDraw 1.4s ease-out .6s forwards,payStarPulse 2.4s ease-in-out 2s infinite}
         .pay-stars polygon:nth-child(2){animation-delay:.9s,2.3s}
@@ -4411,7 +4421,7 @@ html, body, .app, iframe, .bg-layer, #ig-loader, #ea-overlay, #payment-ad-overla
         @keyframes payStarPulse{0%,100%{opacity:1}50%{opacity:.45}}
     </style>
     <div class="pay-stars">
-        <svg viewBox="0 0 120 44" xmlns="http://www.w3.org/2000/svg" fill="none" stroke-width="1" stroke-linejoin="round" aria-hidden="true">
+        <svg viewBox="0 0 120 44" xmlns="http://www.w3.org/2000/svg" fill="none" stroke-width=".6" stroke-linejoin="round" aria-hidden="true">
             <polygon stroke="#C8102E" points="42,3 47.3,17.5 62.8,18.2 50.7,27.9 54.8,42.8 42,34.3 29.2,42.8 33.3,27.9 21.2,18.2 36.7,17.5"/>
             <polygon stroke="#007A33" points="78,3 83.3,17.5 98.8,18.2 86.7,27.9 90.8,42.8 78,34.3 65.2,42.8 69.3,27.9 57.2,18.2 72.7,17.5"/>
         </svg>
